@@ -145,8 +145,9 @@ class GameProvider extends ChangeNotifier {
       newBody.removeAt(0);
     }
 
+    final oldHighScore = _state.highScore;
     final newScore = ate ? _state.score + 10 : _state.score;
-    final newHighScore = newScore > _state.highScore ? newScore : _state.highScore;
+    final newHighScore = newScore > oldHighScore ? newScore : oldHighScore;
 
     Food newFood = _state.food;
     if (ate) {
@@ -161,7 +162,7 @@ class GameProvider extends ChangeNotifier {
       highScore: newHighScore,
     );
 
-    if (ate && newScore > _state.highScore) {
+    if (newHighScore > oldHighScore) {
       _storage.setHighScore(newHighScore);
     }
 
@@ -171,7 +172,13 @@ class GameProvider extends ChangeNotifier {
   void _gameOver() {
     LogService.info('游戏结束, 得分: ${_state.score}');
     _timer?.cancel();
-    _state = _state.copyWith(status: GameStatus.over);
+    if (_state.score > _state.highScore) {
+      _storage.setHighScore(_state.score);
+    }
+    _state = _state.copyWith(
+      status: GameStatus.over,
+      highScore: _state.score > _state.highScore ? _state.score : _state.highScore,
+    );
     notifyListeners();
   }
 
