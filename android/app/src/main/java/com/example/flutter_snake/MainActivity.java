@@ -1,5 +1,6 @@
-package com.example.flutter_snake
+package com.example.flutter_snake;
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterActivity;
 
-class MainActivity: FlutterActivity()
+public class MainActivity extends FlutterActivity {
+}
