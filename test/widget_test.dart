@@ -74,9 +74,7 @@ void main() {
   testWidgets('GameProvider 初始状态', (WidgetTester tester) async {
     final storage = await FakeStorageService.create();
     await tester.pumpWidget(buildTestApp(storage));
-    final game = tester.widget<Provider<GameProvider>>(
-      find.byType(Provider<GameProvider>),
-    ).value;
+    final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
     expect(game.isIdle, isTrue);
     expect(game.state.score, 0);
   });
@@ -84,9 +82,7 @@ void main() {
   testWidgets('SettingsProvider 默认值', (WidgetTester tester) async {
     final storage = await FakeStorageService.create();
     await tester.pumpWidget(buildTestApp(storage));
-    final settings = tester.widget<Provider<SettingsProvider>>(
-      find.byType(Provider<SettingsProvider>),
-    ).value;
+    final settings = tester.element(find.byType(MaterialApp)).read<SettingsProvider>();
     expect(settings.darkMode, isFalse);
     expect(settings.boardSize, 20);
     expect(settings.speed, 200);
