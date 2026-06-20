@@ -143,8 +143,9 @@ jobs:
       - name: Fix audioplayers_windows compile error
         shell: pwsh
         run: |
-          $line = "add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
-          Add-Content -Path windows\flutter\CMakeLists.txt -Value "`n$line"
+          $content = Get-Content windows\CMakeLists.txt -Raw
+          $content = $content -replace '(cmake_minimum_required\(VERSION [\d.]+\))', "`$1`nadd_compile_options(`"/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`")"
+          Set-Content windows\CMakeLists.txt -Value $content -NoNewline
 
       - name: Install dependencies
         run: flutter pub get
