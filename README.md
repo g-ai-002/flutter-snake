@@ -12,9 +12,16 @@
 - ⌨️ 键盘方向键 + 触摸方向键控制
 - 🌓 深色 / 浅色主题切换
 - 📱 自适应布局（手机 / 折叠屏 / 平板 / 桌面）
+- 🎵 音效反馈：吃食物、游戏结束音效
+- 🏅 排行榜：多条目最高分记录
 - 🌐 简体中文界面
 
 ## 下载
+
+### v0.2.0
+
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
 
 ### v0.1.2
 
