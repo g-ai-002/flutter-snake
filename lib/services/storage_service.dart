@@ -2,31 +2,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 
 class StorageService {
-  static Future<StorageService>? _initFuture;
-
+  static StorageService? _instance;
   SharedPreferences? _prefs;
-  bool _initialized = false;
 
   StorageService._();
 
-  static Future<StorageService> get instance {
-    final cached = _initFuture;
-    if (cached != null) return cached;
-    final f = _bootstrap();
-    _initFuture = f;
-    return f;
-  }
+  /// 仅供测试使用
+  StorageService.test();
 
-  static Future<StorageService> _bootstrap() async {
-    final s = StorageService._();
-    await s._init();
-    return s;
-  }
-
-  Future<void> _init() async {
-    if (_initialized) return;
-    _prefs = await SharedPreferences.getInstance();
-    _initialized = true;
+  static Future<StorageService> get instance async {
+    if (_instance != null) return _instance!;
+    _instance = StorageService._();
+    _instance!._prefs = await SharedPreferences.getInstance();
+    return _instance!;
   }
 
   SharedPreferences get _p {
