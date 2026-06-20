@@ -25,6 +25,9 @@ jobs:
       app_version: ${{ steps.version.outputs.jversion }}
       project_name: ${{ steps.project.outputs.project_name }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
       - name: Prepare package version
         id: version
         shell: bash
