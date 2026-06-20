@@ -25,13 +25,17 @@ class SettingsProvider extends ChangeNotifier {
   bool get muted => _muted;
 
   String get speedLabel {
-    final idx = AppConstants.speeds.indexOf(_speed);
-    return idx >= 0 ? AppConstants.speedLabels[idx] : '中速';
+    for (final opt in AppConstants.speedOptions) {
+      if (opt.ms == _speed) return opt.label;
+    }
+    return '中速';
   }
 
   String get boardSizeLabel {
-    final idx = AppConstants.boardSizes.indexOf(_boardSize);
-    return idx >= 0 ? AppConstants.boardSizeLabels[idx] : '中 (20×20)';
+    for (final opt in AppConstants.boardOptions) {
+      if (opt.size == _boardSize) return opt.label;
+    }
+    return '中 (20×20)';
   }
 
   Future<void> toggleDarkMode(bool value) async {

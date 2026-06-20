@@ -48,13 +48,10 @@ class SettingsPage extends StatelessWidget {
           const Divider(),
           // 棋盘大小
           const _SectionHeader(title: '棋盘大小'),
-          ...AppConstants.boardSizes.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final size = entry.value;
-            final label = AppConstants.boardSizeLabels[idx];
+          ...AppConstants.boardOptions.map((opt) {
             return RadioListTile<int>(
-              title: Text(label),
-              value: size,
+              title: Text(opt.label),
+              value: opt.size,
               groupValue: settings.boardSize,
               onChanged: (v) {
                 if (v != null) {
@@ -68,13 +65,10 @@ class SettingsPage extends StatelessWidget {
           const Divider(),
           // 速度
           const _SectionHeader(title: '游戏速度'),
-          ...AppConstants.speeds.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final speed = entry.value;
-            final label = AppConstants.speedLabels[idx];
+          ...AppConstants.speedOptions.map((opt) {
             return RadioListTile<int>(
-              title: Text(label),
-              value: speed,
+              title: Text(opt.label),
+              value: opt.ms,
               groupValue: settings.speed,
               onChanged: (v) {
                 if (v != null) {
