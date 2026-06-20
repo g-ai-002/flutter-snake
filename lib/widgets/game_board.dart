@@ -131,33 +131,11 @@ class _BoardPainter extends CustomPainter {
     final cx = p.x * cellSize + cellSize / 2;
     final cy = p.y * cellSize + cellSize / 2;
 
-    Offset leftEye, rightEye, leftPupil, rightPupil;
-    switch (state.snake.direction) {
-      case Direction.right:
-        leftEye = Offset(cx - cellSize * 0.2, cy - cellSize * 0.2);
-        rightEye = Offset(cx - cellSize * 0.2, cy + cellSize * 0.2);
-        leftPupil = Offset(cx - cellSize * 0.15, cy - cellSize * 0.2);
-        rightPupil = Offset(cx - cellSize * 0.15, cy + cellSize * 0.2);
-        break;
-      case Direction.left:
-        leftEye = Offset(cx + cellSize * 0.2, cy - cellSize * 0.2);
-        rightEye = Offset(cx + cellSize * 0.2, cy + cellSize * 0.2);
-        leftPupil = Offset(cx + cellSize * 0.15, cy - cellSize * 0.2);
-        rightPupil = Offset(cx + cellSize * 0.15, cy + cellSize * 0.2);
-        break;
-      case Direction.up:
-        leftEye = Offset(cx - cellSize * 0.2, cy + cellSize * 0.2);
-        rightEye = Offset(cx + cellSize * 0.2, cy + cellSize * 0.2);
-        leftPupil = Offset(cx - cellSize * 0.2, cy + cellSize * 0.15);
-        rightPupil = Offset(cx + cellSize * 0.2, cy + cellSize * 0.15);
-        break;
-      case Direction.down:
-        leftEye = Offset(cx - cellSize * 0.2, cy - cellSize * 0.2);
-        rightEye = Offset(cx + cellSize * 0.2, cy - cellSize * 0.2);
-        leftPupil = Offset(cx - cellSize * 0.2, cy - cellSize * 0.15);
-        rightPupil = Offset(cx + cellSize * 0.2, cy - cellSize * 0.15);
-        break;
-    }
+    final offsets = _eyeOffsets(state.snake.direction, cellSize);
+    final leftEye = Offset(cx + offsets[0], cy + offsets[1]);
+    final rightEye = Offset(cx + offsets[2], cy + offsets[3]);
+    final leftPupil = Offset(cx + offsets[4], cy + offsets[5]);
+    final rightPupil = Offset(cx + offsets[6], cy + offsets[7]);
 
     canvas.drawCircle(leftEye, eyeR, eyePaint);
     canvas.drawCircle(rightEye, eyeR, eyePaint);
@@ -165,6 +143,25 @@ class _BoardPainter extends CustomPainter {
     canvas.drawCircle(rightPupil, pupilR, pupilPaint);
   }
 
+  static List<double> _eyeOffsets(Direction dir, double cs) {
+    switch (dir) {
+      case Direction.right:
+        return [-cs * 0.2, -cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.15, -cs * 0.2, -cs * 0.15, cs * 0.2];
+      case Direction.left:
+        return [cs * 0.2, -cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.15, -cs * 0.2, cs * 0.15, cs * 0.2];
+      case Direction.up:
+        return [-cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.2, -cs * 0.2, cs * 0.15, cs * 0.2, cs * 0.15];
+      case Direction.down:
+        return [-cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.2, -cs * 0.2, -cs * 0.15, cs * 0.2, -cs * 0.15];
+    }
+  }
+
   @override
-  bool shouldRepaint(covariant _BoardPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _BoardPainter oldDelegate) {
+    return state != oldDelegate.state ||
+        cellSize != oldDelegate.cellSize ||
+        snakeColor != oldDelegate.snakeColor ||
+        foodColor != oldDelegate.foodColor ||
+        gridColor != oldDelegate.gridColor;
+  }
 }
