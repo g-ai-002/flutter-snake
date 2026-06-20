@@ -18,25 +18,24 @@
 
 ## 下载
 
+### v0.2.2
+
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
+
 ### v0.2.1
 
 - [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1)
 - [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1)
 
-### v0.1.2
+### v0.2.0
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2)
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
 
-### v0.1.1
+### v0.1.x (v0.1.0 ~ v0.1.2)
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1)
-
-### v0.1.0
-
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
