@@ -26,6 +26,16 @@
 
 ## 版本历史
 
+### v0.1.2 (PATCH)
+- **状态**: 已发布 ✅
+- **目标**: 重构优化存量代码，修复已知问题
+- **任务**:
+  - [x] 修复 settings_page.dart: RadioGroup 组件不存在，改用 RadioListTile 直接分组
+  - [x] 修复 game_provider.dart: _gameOver() 不持久化最高分
+  - [x] 简化 StorageService 单例模式，移除不必要的 Future 缓存
+  - [x] 改进 widget_test.dart 添加有意义的冒烟测试
+  - [x] 版本号 0.1.1 → 0.1.2
+
 ### v0.1.1 (PATCH)
 - **状态**: 已发布 ✅
 - **目标**: 修复 CI 流水线报错
