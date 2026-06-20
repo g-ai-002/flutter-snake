@@ -26,6 +26,14 @@
 
 ## 版本历史
 
+### v0.1.1 (PATCH)
+- **状态**: 开发中 🔧
+- **目标**: 修复 CI 流水线报错
+- **任务**:
+  - [x] 修复 game_page.dart: RawKeyEvent → KeyEvent 迁移
+  - [x] 修复 settings_page.dart: RadioGroup 替代废弃 API + const 构造
+  - [x] 版本号 0.1.0 → 0.1.1
+
 ### v0.1.0 (MINOR)
 - **状态**: 已发布 ✅
 - **目标**: 首个版本：贪吃蛇游戏最小可用集

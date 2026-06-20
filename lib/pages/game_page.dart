@@ -22,8 +22,8 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
-  void _onKey(RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return;
+  void _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
     final game = context.read<GameProvider>();
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       game.changeDirection(Direction.up);

@@ -16,6 +16,11 @@
 
 ## 下载
 
+### v0.1.1
+
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1)
+
 ### v0.1.0
 
 - [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
