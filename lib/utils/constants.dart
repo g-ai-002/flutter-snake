@@ -2,12 +2,13 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '贪吃蛇';
-  static const String version = '0.1.2';
+  static const String version = '0.2.0';
 
   static const String prefKeyDarkMode = 'dark_mode';
   static const String prefKeyHighScore = 'high_score';
   static const String prefKeyBoardSize = 'board_size';
   static const String prefKeySpeed = 'speed';
+  static const String prefKeyMuted = 'muted';
 
   static const int defaultBoardWidth = 20;
   static const int defaultBoardHeight = 20;
