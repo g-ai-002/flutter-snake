@@ -34,4 +34,7 @@ class StorageService {
 
   int get speed => _p.getInt(AppConstants.prefKeySpeed) ?? AppConstants.defaultSpeedMs;
   Future<void> setSpeed(int v) => _p.setInt(AppConstants.prefKeySpeed, v);
+
+  bool get muted => _p.getBool(AppConstants.prefKeyMuted) ?? false;
+  Future<void> setMuted(bool v) => _p.setBool(AppConstants.prefKeyMuted, v);
 }

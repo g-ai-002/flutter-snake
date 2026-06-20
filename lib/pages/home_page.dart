@@ -4,6 +4,7 @@ import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
 import 'game_page.dart';
+import 'leaderboard_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -67,6 +68,18 @@ class HomePage extends StatelessWidget {
                     },
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('开始游戏', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: 200,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardPage()));
+                    },
+                    icon: const Icon(Icons.emoji_events),
+                    label: const Text('排行榜'),
                   ),
                 ),
                 const SizedBox(height: 16),

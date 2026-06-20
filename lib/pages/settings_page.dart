@@ -33,6 +33,19 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const Divider(),
+          // 音效
+          const _SectionHeader(title: '音效'),
+          SwitchListTile(
+            title: const Text('静音'),
+            subtitle: const Text('关闭游戏音效'),
+            value: settings.muted,
+            onChanged: (v) => settings.setMuted(v),
+            secondary: Icon(
+              settings.muted ? Icons.volume_off : Icons.volume_up,
+              color: colorScheme.primary,
+            ),
+          ),
+          const Divider(),
           // 棋盘大小
           const _SectionHeader(title: '棋盘大小'),
           ...AppConstants.boardSizes.asMap().entries.map((entry) {

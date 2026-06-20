@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/game_state.dart';
+import '../services/audio_service.dart';
+import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
 import '../services/storage_service.dart';
 
@@ -153,6 +155,7 @@ class GameProvider extends ChangeNotifier {
     if (ate) {
       newFood = _randomFood(_state.boardWidth, _state.boardHeight, newBody);
       LogService.info('吃到食物, 得分: $newScore');
+      AudioService().playEat();
     }
 
     _state = _state.copyWith(
@@ -172,6 +175,8 @@ class GameProvider extends ChangeNotifier {
   void _gameOver() {
     LogService.info('游戏结束, 得分: ${_state.score}');
     _timer?.cancel();
+    AudioService().playGameOver();
+    LeaderboardService.addScore(_state.score);
     if (_state.score > _state.highScore) {
       _storage.setHighScore(_state.score);
     }
