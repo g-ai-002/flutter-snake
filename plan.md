@@ -26,6 +26,18 @@
 
 ## 版本历史
 
+### v0.2.2 (PATCH) — 当前开发中
+- **状态**: 开发完成 ✅
+- **目标**: 重构优化存量代码，修复已知问题
+- **任务**:
+  - [x] 修复 Bug：FocusNode 泄漏（game_page）、AudioService dispose 未调用、leaderboard 无错误处理
+  - [x] 性能优化：_randomFood 用 Set 替代 List.any、shouldRepaint 精确比较、home_page 用 context.select
+  - [x] 代码质量：拆分 _tick 长方法、移除重复持久化最高分、_drawEyes 提取映射表、平行数组改结构化数据
+  - [x] 错误处理：storage/file_system/main.dart 加 try-catch
+  - [x] 测试增强：GameProvider 核心逻辑、LeaderboardService、边界测试
+  - [x] 配置优化：analysis_options 收紧 lint 规则、CI 版本号从 pubspec.yaml 读取
+  - [x] 版本号 0.2.1 → 0.2.2
+
 ### v0.2.1 (PATCH)
 - **状态**: 已发布 ✅
 - **目标**: 修复 CI 流水线 Windows 构建报错
