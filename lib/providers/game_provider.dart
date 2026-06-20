@@ -125,18 +125,7 @@ class GameProvider extends ChangeNotifier {
 
     final newHead = snake.head.move(dir);
 
-    // 撞墙检测
-    if (newHead.x < 0 ||
-        newHead.x >= _state.boardWidth ||
-        newHead.y < 0 ||
-        newHead.y >= _state.boardHeight) {
-      _gameOver();
-      return;
-    }
-
-    // 撞自己检测（排除尾部，因为尾部即将移走）
-    final bodyWithoutTail = snake.body.sublist(1);
-    if (bodyWithoutTail.any((p) => p == newHead)) {
+    if (_isCollision(newHead, snake)) {
       _gameOver();
       return;
     }
@@ -147,9 +136,8 @@ class GameProvider extends ChangeNotifier {
       newBody.removeAt(0);
     }
 
-    final oldHighScore = _state.highScore;
     final newScore = ate ? _state.score + 10 : _state.score;
-    final newHighScore = newScore > oldHighScore ? newScore : oldHighScore;
+    final newHighScore = newScore > _state.highScore ? newScore : _state.highScore;
 
     Food newFood = _state.food;
     if (ate) {
@@ -165,11 +153,22 @@ class GameProvider extends ChangeNotifier {
       highScore: newHighScore,
     );
 
-    if (newHighScore > oldHighScore) {
+    if (newHighScore > _state.highScore) {
       _storage.setHighScore(newHighScore);
     }
 
     notifyListeners();
+  }
+
+  bool _isCollision(Point head, Snake snake) {
+    if (head.x < 0 ||
+        head.x >= _state.boardWidth ||
+        head.y < 0 ||
+        head.y >= _state.boardHeight) {
+      return true;
+    }
+    final bodyWithoutTail = snake.body.sublist(1);
+    return bodyWithoutTail.any((p) => p == head);
   }
 
   void _gameOver() {
@@ -177,23 +176,25 @@ class GameProvider extends ChangeNotifier {
     _timer?.cancel();
     AudioService().playGameOver();
     LeaderboardService.addScore(_state.score);
-    if (_state.score > _state.highScore) {
-      _storage.setHighScore(_state.score);
+    final newHighScore = _state.score > _state.highScore ? _state.score : _state.highScore;
+    if (newHighScore > _state.highScore) {
+      _storage.setHighScore(newHighScore);
     }
     _state = _state.copyWith(
       status: GameStatus.over,
-      highScore: _state.score > _state.highScore ? _state.score : _state.highScore,
+      highScore: newHighScore,
     );
     notifyListeners();
   }
 
   Food _randomFood(int w, int h, List<Point> occupied) {
     final rng = Random();
+    final occupiedSet = occupied.toSet();
     final available = <Point>[];
     for (var x = 0; x < w; x++) {
       for (var y = 0; y < h; y++) {
         final p = Point(x, y);
-        if (!occupied.any((o) => o == p)) {
+        if (!occupiedSet.contains(p)) {
           available.add(p);
         }
       }
