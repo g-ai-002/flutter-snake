@@ -14,12 +14,21 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
+  final FocusNode _focusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
+    _focusNode.requestFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GameProvider>().start();
     });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   void _onKey(KeyEvent event) {
@@ -45,7 +54,7 @@ class _GamePageState extends State<GamePage> {
     final state = game.state;
 
     return KeyboardListener(
-      focusNode: FocusNode()..requestFocus(),
+      focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: _onKey,
       child: Scaffold(
