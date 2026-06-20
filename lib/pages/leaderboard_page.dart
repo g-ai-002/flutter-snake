@@ -18,13 +18,24 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     _load();
   }
 
+  String? _error;
+
   Future<void> _load() async {
-    final entries = await LeaderboardService.getEntries();
-    if (!mounted) return;
-    setState(() {
-      _entries = entries;
-      _loading = false;
-    });
+    try {
+      final entries = await LeaderboardService.getEntries();
+      if (!mounted) return;
+      setState(() {
+        _entries = entries;
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '加载失败，请重试';
+      });
+    }
   }
 
   @override
@@ -61,7 +72,20 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _entries.isEmpty
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+                      const SizedBox(height: 16),
+                      Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
+                      const SizedBox(height: 16),
+                      OutlinedButton(onPressed: _load, child: const Text('重试')),
+                    ],
+                  ),
+                )
+              : _entries.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
