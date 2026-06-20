@@ -13,17 +13,20 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final game = context.watch<GameProvider>();
-    final settings = context.watch<SettingsProvider>();
+    final highScore = context.select<GameProvider, int>((g) => g.state.highScore);
+    final darkMode = context.select<SettingsProvider, bool>((s) => s.darkMode);
+    final boardSizeLabel = context.select<SettingsProvider, String>((s) => s.boardSizeLabel);
+    final speedLabel = context.select<SettingsProvider, String>((s) => s.speedLabel);
+    final settings = context.read<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
         actions: [
           IconButton(
-            icon: Icon(settings.darkMode ? Icons.light_mode : Icons.dark_mode),
-            tooltip: settings.darkMode ? '切换浅色模式' : '切换深色模式',
-            onPressed: () => settings.toggleDarkMode(!settings.darkMode),
+            icon: Icon(darkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: darkMode ? '切换浅色模式' : '切换深色模式',
+            onPressed: () => settings.toggleDarkMode(!darkMode),
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -84,14 +87,14 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '最高分: ${game.state.highScore}',
+                  '最高分: $highScore',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: colorScheme.secondary,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '棋盘: ${settings.boardSizeLabel}  |  速度: ${settings.speedLabel}',
+                  '棋盘: $boardSizeLabel  |  速度: $speedLabel',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
