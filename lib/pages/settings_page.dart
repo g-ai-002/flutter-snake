@@ -35,51 +35,43 @@ class SettingsPage extends StatelessWidget {
           const Divider(),
           // 棋盘大小
           const _SectionHeader(title: '棋盘大小'),
-          RadioGroup<int>(
-            groupValue: settings.boardSize,
-            onChanged: (v) {
-              if (v != null) {
-                settings.setBoardSize(v);
-                game.updateBoardSize(v);
-              }
-            },
-            child: Column(
-              children: AppConstants.boardSizes.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final size = entry.value;
-                final label = AppConstants.boardSizeLabels[idx];
-                return RadioListTile<int>(
-                  title: Text(label),
-                  value: size,
-                  secondary: Icon(Icons.grid_on, color: colorScheme.primary),
-                );
-              }).toList(),
-            ),
-          ),
+          ...AppConstants.boardSizes.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final size = entry.value;
+            final label = AppConstants.boardSizeLabels[idx];
+            return RadioListTile<int>(
+              title: Text(label),
+              value: size,
+              groupValue: settings.boardSize,
+              onChanged: (v) {
+                if (v != null) {
+                  settings.setBoardSize(v);
+                  game.updateBoardSize(v);
+                }
+              },
+              secondary: Icon(Icons.grid_on, color: colorScheme.primary),
+            );
+          }),
           const Divider(),
           // 速度
           const _SectionHeader(title: '游戏速度'),
-          RadioGroup<int>(
-            groupValue: settings.speed,
-            onChanged: (v) {
-              if (v != null) {
-                settings.setSpeed(v);
-                game.updateSpeed(v);
-              }
-            },
-            child: Column(
-              children: AppConstants.speeds.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final speed = entry.value;
-                final label = AppConstants.speedLabels[idx];
-                return RadioListTile<int>(
-                  title: Text(label),
-                  value: speed,
-                  secondary: Icon(Icons.speed, color: colorScheme.primary),
-                );
-              }).toList(),
-            ),
-          ),
+          ...AppConstants.speeds.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final speed = entry.value;
+            final label = AppConstants.speedLabels[idx];
+            return RadioListTile<int>(
+              title: Text(label),
+              value: speed,
+              groupValue: settings.speed,
+              onChanged: (v) {
+                if (v != null) {
+                  settings.setSpeed(v);
+                  game.updateSpeed(v);
+                }
+              },
+              secondary: Icon(Icons.speed, color: colorScheme.primary),
+            );
+          }),
           const Divider(),
           // 关于
           const _SectionHeader(title: '关于'),
