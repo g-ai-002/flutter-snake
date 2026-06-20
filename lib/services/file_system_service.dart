@@ -16,9 +16,11 @@ class FileSystemService {
       base = await getApplicationDocumentsDirectory();
     }
     final root = Directory('${base.path}${Platform.pathSeparator}FlutterSnake');
-    if (!await root.exists()) {
-      await root.create(recursive: true);
-    }
+    try {
+      if (!await root.exists()) {
+        await root.create(recursive: true);
+      }
+    } catch (_) {}
     return root;
   }
 
@@ -26,9 +28,11 @@ class FileSystemService {
     if (_logRoot != null) return _logRoot!;
     final user = await getUserRoot();
     final logDir = Directory('${user.path}${Platform.pathSeparator}logs');
-    if (!await logDir.exists()) {
-      await logDir.create(recursive: true);
-    }
+    try {
+      if (!await logDir.exists()) {
+        await logDir.create(recursive: true);
+      }
+    } catch (_) {}
     _logRoot = logDir;
     return logDir;
   }

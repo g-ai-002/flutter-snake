@@ -24,17 +24,27 @@ class StorageService {
   }
 
   bool get darkMode => _p.getBool(AppConstants.prefKeyDarkMode) ?? false;
-  Future<void> setDarkMode(bool v) => _p.setBool(AppConstants.prefKeyDarkMode, v);
+  Future<void> setDarkMode(bool v) async {
+    try { await _p.setBool(AppConstants.prefKeyDarkMode, v); } catch (_) {}
+  }
 
   int get highScore => _p.getInt(AppConstants.prefKeyHighScore) ?? 0;
-  Future<void> setHighScore(int v) => _p.setInt(AppConstants.prefKeyHighScore, v);
+  Future<void> setHighScore(int v) async {
+    try { await _p.setInt(AppConstants.prefKeyHighScore, v); } catch (_) {}
+  }
 
   int get boardSize => _p.getInt(AppConstants.prefKeyBoardSize) ?? AppConstants.defaultBoardWidth;
-  Future<void> setBoardSize(int v) => _p.setInt(AppConstants.prefKeyBoardSize, v);
+  Future<void> setBoardSize(int v) async {
+    try { await _p.setInt(AppConstants.prefKeyBoardSize, v); } catch (_) {}
+  }
 
   int get speed => _p.getInt(AppConstants.prefKeySpeed) ?? AppConstants.defaultSpeedMs;
-  Future<void> setSpeed(int v) => _p.setInt(AppConstants.prefKeySpeed, v);
+  Future<void> setSpeed(int v) async {
+    try { await _p.setInt(AppConstants.prefKeySpeed, v); } catch (_) {}
+  }
 
   bool get muted => _p.getBool(AppConstants.prefKeyMuted) ?? false;
-  Future<void> setMuted(bool v) => _p.setBool(AppConstants.prefKeyMuted, v);
+  Future<void> setMuted(bool v) async {
+    try { await _p.setBool(AppConstants.prefKeyMuted, v); } catch (_) {}
+  }
 }

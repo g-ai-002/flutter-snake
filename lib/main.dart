@@ -16,19 +16,23 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isWindows) {
-    await windowManager.ensureInitialized();
-    const opts = WindowOptions(
-      size: Size(480, 720),
-      minimumSize: Size(360, 480),
-      center: true,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.normal,
-      title: AppConstants.appName,
-    );
-    windowManager.waitUntilReadyToShow(opts, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
+    try {
+      await windowManager.ensureInitialized();
+      const opts = WindowOptions(
+        size: Size(480, 720),
+        minimumSize: Size(360, 480),
+        center: true,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+        title: AppConstants.appName,
+      );
+      windowManager.waitUntilReadyToShow(opts, () async {
+        await windowManager.show();
+        await windowManager.focus();
+      });
+    } catch (e) {
+      LogService.warning('窗口管理器初始化失败: $e');
+    }
   }
 
   final storage = await StorageService.instance;
