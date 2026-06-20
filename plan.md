@@ -27,7 +27,7 @@
 ## 版本历史
 
 ### v0.1.1 (PATCH)
-- **状态**: 开发中 🔧
+- **状态**: 已发布 ✅
 - **目标**: 修复 CI 流水线报错
 - **任务**:
   - [x] 修复 game_page.dart: RawKeyEvent → KeyEvent 迁移
