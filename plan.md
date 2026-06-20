@@ -7,15 +7,15 @@
 - 持续可演进：每个版本可独立交付，可观测、可回滚
 
 ## 中期目标
-- [ ] 经典贪吃蛇玩法（移动、吃食物、增长、碰撞检测）
-- [ ] 多种难度级别（慢/中/快）
-- [ ] 多种棋盘大小（小/中/大）
-- [ ] 最高分记录持久化
-- [ ] 暂停/继续/重新开始
-- [ ] 键盘方向键 + 触摸滑动手势控制
-- [ ] 自适应布局（手机/折叠屏/平板/桌面）
-- [ ] 深色/浅色主题切换
-- [ ] 日志系统（按日落盘到用户目录 logs/）
+- [x] 经典贪吃蛇玩法（移动、吃食物、增长、碰撞检测）
+- [x] 多种难度级别（慢/中/快）
+- [x] 多种棋盘大小（小/中/大）
+- [x] 最高分记录持久化
+- [x] 暂停/继续/重新开始
+- [x] 键盘方向键 + 触摸方向键控制
+- [x] 自适应布局（手机/折叠屏/平板/桌面）
+- [x] 深色/浅色主题切换
+- [x] 日志系统（按日落盘到用户目录 logs/）
 - [ ] 音效反馈（后续版本）
 - [ ] 排行榜（后续版本）
 
@@ -27,23 +27,23 @@
 ## 版本历史
 
 ### v0.1.0 (MINOR)
-- **状态**: 开发中 🚧
+- **状态**: 已发布 ✅
 - **目标**: 首个版本：贪吃蛇游戏最小可用集
 - **任务**:
-  - [ ] 项目脚手架（pubspec/analysis_options/.gitignore）
-  - [ ] Android 平台文件（manifest、build.gradle、签名、minSdk=34/targetSdk=36/compileSdk=36）
-  - [ ] 主题（Material 3 浅/深色、Windows YaHei UI、克制扁平风）
-  - [ ] 数据模型（Snake、Food、GameState）
-  - [ ] 服务层：日志、文件系统、存储
-  - [ ] 状态层：GameProvider、SettingsProvider
-  - [ ] 游戏核心：棋盘渲染、蛇移动、食物生成、碰撞检测、分数
-  - [ ] 界面：主页、游戏页、设置页
-  - [ ] 键盘方向键 + 触摸滑动手势控制
-  - [ ] 暂停/继续/重新开始
-  - [ ] 最高分持久化
-  - [ ] 单元测试
-  - [ ] GitHub Actions：lint + 单测 + Android APK + Windows ZIP + tag 自动 release
-  - [ ] README/plan
+  - [x] 项目脚手架（pubspec/analysis_options/.gitignore）
+  - [x] Android 平台文件（manifest、build.gradle、签名、minSdk=34/targetSdk=36/compileSdk=36）
+  - [x] 主题（Material 3 浅/深色、Windows YaHei UI、克制扁平风）
+  - [x] 数据模型（Snake、Food、GameState）
+  - [x] 服务层：日志、文件系统、存储
+  - [x] 状态层：GameProvider、SettingsProvider
+  - [x] 游戏核心：棋盘渲染、蛇移动、食物生成、碰撞检测、分数
+  - [x] 界面：主页、游戏页、设置页
+  - [x] 键盘方向键 + 触摸方向键控制
+  - [x] 暂停/继续/重新开始
+  - [x] 最高分持久化
+  - [x] 单元测试
+  - [x] GitHub Actions：lint + 单测 + Android APK + Windows ZIP + tag 自动 release
+  - [x] README/plan
 
 ---
 
