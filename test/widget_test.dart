@@ -46,6 +46,14 @@ class FakeStorageService extends StorageService {
   Future<void> setSpeed(int v) async {
     _store['speed'] = v;
   }
+
+  @override
+  bool get muted => _store['muted'] as bool? ?? false;
+
+  @override
+  Future<void> setMuted(bool v) async {
+    _store['muted'] = v;
+  }
 }
 
 Widget buildTestApp(FakeStorageService storage) {
@@ -86,5 +94,15 @@ void main() {
     expect(settings.darkMode, isFalse);
     expect(settings.boardSize, 20);
     expect(settings.speed, 200);
+    expect(settings.muted, isFalse);
+  });
+
+  testWidgets('SettingsProvider 静音切换', (WidgetTester tester) async {
+    final storage = await FakeStorageService.create();
+    await tester.pumpWidget(buildTestApp(storage));
+    final settings = tester.element(find.byType(MaterialApp)).read<SettingsProvider>();
+    expect(settings.muted, isFalse);
+    await settings.setMuted(true);
+    expect(settings.muted, isTrue);
   });
 }
