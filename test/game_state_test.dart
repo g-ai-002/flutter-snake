@@ -61,4 +61,46 @@ void main() {
       expect(dirs.length, 4);
     });
   });
+
+  group('Food', () {
+    test('Food 创建', () {
+      const food = Food(Point(3, 7));
+      expect(food.position, const Point(3, 7));
+    });
+  });
+
+  group('GameStatus', () {
+    test('all statuses are distinct', () {
+      final statuses = GameStatus.values.toSet();
+      expect(statuses.length, 4);
+    });
+  });
+
+  group('边界测试', () {
+    test('从 (0,0) 向上移动', () {
+      const p = Point(0, 0);
+      expect(p.move(Direction.up), const Point(0, -1));
+    });
+
+    test('从 (0,0) 向左移动', () {
+      const p = Point(0, 0);
+      expect(p.move(Direction.left), const Point(-1, 0));
+    });
+
+    test('Snake 空 body 时 head 抛异常', () {
+      expect(() => Snake(body: []).head, throwsA(isA<StateError>()));
+    });
+
+    test('GameState 默认值', () {
+      final state = GameState(
+        snake: Snake(body: [const Point(0, 0)]),
+        food: const Food(Point(5, 5)),
+      );
+      expect(state.status, GameStatus.idle);
+      expect(state.score, 0);
+      expect(state.boardWidth, 20);
+      expect(state.boardHeight, 20);
+      expect(state.speedMs, 200);
+    });
+  });
 }
