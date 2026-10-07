@@ -1,0 +1,275 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.sha }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    name: Prepare package metadata
+    outputs:
+      app_version: ${{ steps.version.outputs.jversion }}
+      project_name: ${{ steps.project.outputs.project_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Prepare package version
+        id: version
+        shell: bash
+        run: |
+          jversion=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            raw_tag="${{ github.ref_name }}"
+            version=$(echo "$raw_tag" | sed -E 's/^[vV]//')
+            jversion=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')
+            if [ -z "$jversion" ]; then
+              jversion=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+            fi
+          fi
+          echo "jversion=$jversion" >> $GITHUB_OUTPUT
+          echo "Using version: $jversion"
+
+      - name: Compute project name
+        id: project
+        shell: bash
+        run: |
+          projectName=$(echo "${{ env.APP_NAME }}" | tr '-' '_')
+          echo "project_name=$projectName" >> $GITHUB_OUTPUT
+          echo "Project name for Flutter: $projectName"
+
+  test:
+    needs: [ metadata ]
+    runs-on: ubuntu-flutter
+    name: Run Dart tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+  build-android:
+    needs: [ metadata, test ]
+    runs-on: ubuntu-flutter
+    name: Build Android APK
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Diagnose network and Flutter environment
+        run: |
+          echo "=== Build-time env ==="
+          echo "USE_ALIYUN_MAVEN=${USE_ALIYUN_MAVEN:-<not set>}"
+          echo "JAVA_HOME=${JAVA_HOME:-<not set>}"
+          echo "ANDROID_HOME=${ANDROID_HOME:-<not set>}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<not set>}"
+          echo "GRADLE_USER_HOME=${GRADLE_USER_HOME:-<not set>}"
+          echo "http_proxy=${http_proxy:-<not set>}"
+          echo "https_proxy=${https_proxy:-<not set>}"
+          echo "=== Flutter version ==="
+          flutter --version
+          echo "=== Flutter doctor ==="
+          timeout 10 flutter doctor -v || true
+          echo "=== Environment variables ==="
+          echo "FLUTTER_STORAGE_BASE_URL=${FLUTTER_STORAGE_BASE_URL:-<not set>}"
+          echo "PUB_HOSTED_URL=${PUB_HOSTED_URL:-<not set>}"
+          echo "=== Connectivity check ==="
+          curl -sI --connect-timeout 10 https://storage.flutter-io.cn 2>&1 || echo "storage.flutter-io.cn unreachable"
+          curl -sI --connect-timeout 10 https://storage.googleapis.com 2>&1 || echo "storage.googleapis.com unreachable"
+
+      - name: Deploy Gradle init script for Aliyun mirrors
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cp android/gradle/init-aliyun-mirror.gradle ~/.gradle/init.d/init-aliyun-mirror.gradle
+          echo "Deployed init script to ~/.gradle/init.d/"
+          if [ "${USE_ALIYUN_MAVEN:-}" = "true" ]; then
+            echo "USE_ALIYUN_MAVEN=true, Aliyun mirrors will be applied globally"
+          else
+            echo "USE_ALIYUN_MAVEN not set, init script will be a no-op"
+          fi
+
+      - name: Build Android APK
+        run: flutter build apk --release --target-platform android-arm64 --verbose
+
+      - name: Rename Android APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk ./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+
+      - name: Upload Android artifact
+        uses: actions/gitea-upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+
+  build-windows:
+    needs: [ metadata, test ]
+    runs-on: windows-flutter
+    name: Build Windows EXE
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Diagnose Flutter environment
+        shell: bash
+        run: |
+          id
+          echo "=== Flutter version ==="
+          flutter --version
+          echo "=== Flutter doctor ==="
+          timeout 10 flutter doctor -v || true
+
+      - name: Install dependencies
+        shell: bash
+        run: flutter pub get
+
+      - name: Generate Windows platform files
+        shell: bash
+        run: flutter create --platforms=windows --project-name ${{ needs.metadata.outputs.project_name }} .
+
+      - name: Fix audioplayers_windows compile error
+        shell: bash
+        run: |
+          sed -i -E 's|^(cmake_minimum_required\(VERSION [0-9.]+\))$|\1\nadd_compile_options("/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")|' windows/CMakeLists.txt
+          grep -n 'SILENCE_EXPERIMENTAL_COROUTINE' windows/CMakeLists.txt
+
+      - name: Build Windows
+        shell: bash
+        run: flutter build windows --release
+
+      - name: List build output
+        shell: bash
+        run: |
+          release_dir='build/windows/x64/runner/Release'
+          if [ -d "$release_dir" ]; then
+            total_bytes=0
+            for f in "$release_dir"/*; do
+              if [ -f "$f" ]; then
+                size=$(stat -c%s "$f")
+                size_mb=$(awk "BEGIN{printf \"%.2f\", $size/1048576}")
+                echo "  $(basename "$f")  ($size_mb MB)"
+                total_bytes=$((total_bytes + size))
+              fi
+            done
+            total_mb=$(awk "BEGIN{printf \"%.2f\", $total_bytes/1048576}")
+            echo "  Total: $total_mb MB"
+          else
+            echo "Release dir missing"
+            exit 1
+          fi
+
+      - name: Create Windows ZIP
+        shell: bash
+        run: |
+          tar.exe -a -cf windows.zip -C "build/windows/x64/runner/Release" .
+          zip_size=$(stat -c%s windows.zip)
+          zip_size_mb=$(awk "BEGIN{printf \"%.2f\", $zip_size/1048576}")
+          echo "ZIP size: $zip_size_mb MB"
+
+      - name: Rename Windows ZIP
+        shell: bash
+        run: |
+          mv -f windows.zip "./${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/gitea-upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+          path: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+
+  release:
+    needs: [ metadata, build-android, build-windows ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release
+    steps:
+      - name: Checkout code (for changelog)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Android artifact
+        uses: actions/gitea-download-artifact@v8
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-android-aarch64.apk
+          path: artifacts
+
+      - name: Download Windows artifact
+        uses: actions/gitea-download-artifact@v8
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.metadata.outputs.app_version }}-windows-x86_64.zip
+          path: artifacts
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          current_tag=${GITHUB_REF#refs/tags/}
+          prev_tag=$(git tag --sort=-version:refname | grep -v "^$current_tag$" | head -1)
+          if [[ -n "$prev_tag" ]]; then
+            git log --pretty=format:"* %s (%h)" "$prev_tag".."$current_tag" -- . ":(exclude)docs" ":(exclude).github" ":(exclude).gitea" > /tmp/release_body.txt
+          else
+            echo "Initial release." > /tmp/release_body.txt
+          fi
+          echo "=== Release notes ==="
+          cat /tmp/release_body.txt
+
+      - name: Create Gitea Release
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          PRERELEASE=false
+          if echo "${{ github.ref_name }}" | grep -qE -- '-(rc|beta)'; then
+            PRERELEASE=true
+          fi
+
+          BODY_JSON=$(jq -Rs . < /tmp/release_body.txt)
+          response=$(curl -s -X POST \
+            "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases" \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"${{ github.ref_name }}\",\"name\":\"${{ github.ref_name }}\",\"body\":${BODY_JSON},\"draft\":false,\"prerelease\":${PRERELEASE}}")
+
+          release_id=$(echo "$response" | jq .id)
+
+          if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
+            echo "Failed to create release: $response"
+            exit 1
+          fi
+
+          echo "Created release with ID: $release_id"
+
+          for file in artifacts/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading $filename..."
+              curl -s -X POST \
+                "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/$release_id/assets?name=$filename" \
+                -H "Authorization: token $GITEA_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary "@$file"
+            fi
+          done
