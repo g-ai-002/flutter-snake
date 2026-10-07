@@ -146,13 +146,13 @@ class _BoardPainter extends CustomPainter {
   static List<double> _eyeOffsets(Direction dir, double cs) {
     switch (dir) {
       case Direction.right:
-        return [-cs * 0.2, -cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.15, -cs * 0.2, -cs * 0.15, cs * 0.2];
+        return [cs * 0.2, -cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.25, -cs * 0.2, cs * 0.25, cs * 0.2];
       case Direction.left:
-        return [cs * 0.2, -cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.15, -cs * 0.2, cs * 0.15, cs * 0.2];
+        return [-cs * 0.2, -cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.25, -cs * 0.2, -cs * 0.25, cs * 0.2];
       case Direction.up:
-        return [-cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.2, -cs * 0.2, cs * 0.15, cs * 0.2, cs * 0.15];
+        return [-cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.2, -cs * 0.2, -cs * 0.25, cs * 0.2, -cs * 0.25];
       case Direction.down:
-        return [-cs * 0.2, -cs * 0.2, cs * 0.2, -cs * 0.2, -cs * 0.2, -cs * 0.15, cs * 0.2, -cs * 0.15];
+        return [-cs * 0.2, cs * 0.2, cs * 0.2, cs * 0.2, -cs * 0.2, cs * 0.25, cs * 0.2, cs * 0.25];
     }
   }
 
