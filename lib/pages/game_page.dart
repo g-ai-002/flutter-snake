@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../providers/game_provider.dart';
-import '../widgets/direction_pad.dart';
 import '../widgets/game_board.dart';
+import '../widgets/gesture_control.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -102,21 +103,25 @@ class _GamePageState extends State<GamePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              // 游戏棋盘
+              // 游戏棋盘（整块区域同时作为手势控制层）
               Expanded(
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: state.boardWidth / state.boardHeight,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: GameBoard(
-                          state: state,
-                          snakeColor: colorScheme.primary,
-                          foodColor: colorScheme.error,
-                          gridColor: colorScheme.outline.withValues(alpha: 0.3),
-                          backgroundColor: colorScheme.surface,
+                child: GestureControl(
+                  onDirection: (dir) => game.changeDirection(dir),
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: state.boardWidth / state.boardHeight,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: GameBoard(
+                            state: state,
+                            snakeColor: colorScheme.primary,
+                            foodColor: colorScheme.error,
+                            gridColor: colorScheme.outline
+                                .withValues(alpha: 0.3),
+                            backgroundColor: colorScheme.surface,
+                          ),
                         ),
                       ),
                     ),
@@ -124,10 +129,19 @@ class _GamePageState extends State<GamePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              // 控制区域
+              // 操作提示
               if (state.status == GameStatus.playing || state.status == GameStatus.paused)
-                DirectionPad(
-                  onDirection: (dir) => game.changeDirection(dir),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    defaultTargetPlatform == TargetPlatform.windows
+                        ? '方向键 / 点击或滑动棋盘控制方向'
+                        : '点击或滑动棋盘控制方向',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
                 ),
               if (state.status == GameStatus.over || state.status == GameStatus.idle)
                 Padding(
