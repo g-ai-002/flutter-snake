@@ -1,7 +1,11 @@
 allprojects {
     repositories {
-        google()
+        if (System.getenv('USE_ALIYUN_MAVEN') == 'true') {
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+        }
         mavenCentral()
+        google()
     }
 }
 
