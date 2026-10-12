@@ -102,6 +102,7 @@
 
 ## 依赖与版本基线
 - Flutter: 3.47.7
+- Dart: 3.13.5（对应 Flutter 3.47.7 内置 Dart SDK）
 - Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
 - provider: 6.1.5+1
 - shared_preferences: 2.5.5
