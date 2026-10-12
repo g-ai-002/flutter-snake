@@ -101,7 +101,8 @@
 - **包体克制**：当前依赖均为成熟稳定的纯 Dart / Flutter 插件，避免引入大型原生 SDK。
 
 ## 依赖与版本基线
-- Flutter: 3.44.1
+- Flutter: 3.47.7
+- Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
 - provider: 6.1.5+1
 - shared_preferences: 2.5.5
 - path_provider: 2.1.5

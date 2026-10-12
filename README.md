@@ -41,8 +41,8 @@
 
 ### 环境要求
 
-- Flutter 3.44.1+
-- Android SDK 34+
+- Flutter 3.47.7+
+- Android SDK 37+（编译 SDK；最低支持 Android 15，仅覆盖最新 3 个 Android 大版本）
 - Windows 10+
 
 ### 运行
@@ -60,7 +60,7 @@ flutter test
 
 ## 技术栈
 
-- Flutter 3.44.1
+- Flutter 3.47.7
 - Provider 状态管理
 - Material 3 设计
 - SharedPreferences 持久化
