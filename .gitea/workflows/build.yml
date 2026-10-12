@@ -111,7 +111,7 @@ jobs:
           fi
 
       - name: 🔨 构建 Android APK
-        run: flutter build apk --release --target-platform android-arm64 --verbose
+        run: flutter build apk --release --target-platform android-arm64
 
       - name: 📝 重命名 Android APK
         run: |
