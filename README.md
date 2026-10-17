@@ -19,6 +19,11 @@
 
 ## 下载
 
+### v0.3.1
+
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
+
 ### v0.3.0
 
 - [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0)
@@ -29,19 +34,9 @@
 - [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
 - [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
 
-### v0.2.1
+### v0.1.0 ~ v0.2.1（历史版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1)
-
-### v0.2.0
-
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0)
-
-### v0.1.x (v0.1.0 ~ v0.1.2)
-
-- [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
@@ -63,6 +58,19 @@ flutter run
 ```bash
 flutter test
 ```
+
+### 发布
+
+推送 `v*` 标签会触发 GitHub Actions 与 Gitea Actions 双流水线，分别构建 Android APK 与
+Windows ZIP，并在对应平台自动创建 Release：
+
+```bash
+git tag v0.3.1
+git push origin v0.3.1
+```
+
+构建产物的版本号取自 `pubspec.yaml` 的 `version` 字段，标签版本号优先；应用内展示的版本号
+位于 `lib/utils/constants.dart` 的 `AppConstants.version`，发版时需与 `pubspec.yaml` 同步修改。
 
 ## 技术栈
 
