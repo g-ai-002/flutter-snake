@@ -9,7 +9,8 @@
 - 📐 三种棋盘大小：15×15 / 20×20 / 25×25
 - 🏆 最高分记录持久化
 - ⏯️ 暂停 / 继续 / 重新开始
-- ⌨️ 方向键 + 鼠标点击 / 手指滑动控制方向
+- 🎮 手势控制：点击 / 滑动整块棋盘判定方向
+- ⌨️ 键盘控制：方向键转向、空格暂停（Windows）
 - 🌓 深色 / 浅色主题切换
 - 📱 自适应布局（手机 / 折叠屏 / 平板 / 桌面）
 - 🎵 音效反馈：吃食物、游戏结束音效
@@ -17,6 +18,11 @@
 - 🌐 简体中文界面
 
 ## 下载
+
+### v0.3.0
+
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0)
 
 ### v0.2.2
 
@@ -41,7 +47,7 @@
 
 ### 环境要求
 
-- Flutter 3.47.7+
+- Flutter 3.47.7+（内置 Dart 3.13.5+）
 - Android SDK 37+（编译 SDK；最低支持 Android 15，仅覆盖最新 3 个 Android 大版本）
 - Windows 10+
 
@@ -64,6 +70,7 @@ flutter test
 - Provider 状态管理
 - Material 3 设计
 - SharedPreferences 持久化
+- audioplayers 音效播放
 - window_manager 桌面窗口管理
 
 ## 许可证
