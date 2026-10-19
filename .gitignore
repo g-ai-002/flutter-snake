@@ -15,10 +15,6 @@ android/app/build/
 android/build/
 android/local.properties
 
-# Signing secrets
-android/key.properties
-*.jks
-
 # Windows
 windows/
 
