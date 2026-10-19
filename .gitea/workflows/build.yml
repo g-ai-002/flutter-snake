@@ -170,11 +170,11 @@ jobs:
         shell: bash
         run: flutter create --platforms=windows --project-name ${{ needs.metadata.outputs.project_name }} .
 
-      - name: 🩹 修复 audioplayers_windows 编译错误
+      - name: 🩹 CMakeLists 启用 CMP0091 策略（audioplayers_windows 4.x + VS 2026 要求）
         shell: bash
         run: |
-          sed -i -E 's|^(cmake_minimum_required\(VERSION [0-9.]+\))$|\1\nadd_compile_options("/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS")|' windows/CMakeLists.txt
-          grep -n 'SILENCE_EXPERIMENTAL_COROUTINE' windows/CMakeLists.txt
+          sed -i -E 's|^(cmake_minimum_required\(VERSION [0-9.]+\))$|\1\ncmake_policy(SET CMP0091 NEW)|' windows/CMakeLists.txt
+          grep -n 'CMP0091' windows/CMakeLists.txt
 
       - name: 🔨 构建 Windows
         shell: bash

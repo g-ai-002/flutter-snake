@@ -46,7 +46,7 @@
 | Path Provider (`path_provider`)           | `2.1.6`   | `2.1.6` (已是最新)   | `2.1.6` (已是最新)   | `2.1.6` (已是最新)   | `pubspec.yaml` | 平台目录定位             | dependencies |
 | Path (`path`)                             | `1.9.1`   | `1.9.1` (已是最新)   | `1.9.1` (已是最新)   | `1.9.1` (已是最新)   | `pubspec.yaml` | 路径处理                 | dependencies |
 | Window Manager (`window_manager`)         | `0.5.2`   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `0.5.2` (已是最新)   | `pubspec.yaml` | 桌面窗口管理（Windows）  | dependencies |
-| Audioplayers (`audioplayers`)             | `6.5.1`   | `6.8.1`              | `6.8.1`              | `6.5.1` (已是最新)   | `pubspec.yaml` | 音频播放（audioplayers） | dependencies |
+| Audioplayers (`audioplayers`)             | `6.8.1`   | `6.8.1` (已是最新)   | `6.8.1` (已是最新)   | `6.8.1` (已是最新)   | `pubspec.yaml` | 音频播放（audioplayers） | dependencies |
 
 ## 2. Flutter 开发依赖
 
