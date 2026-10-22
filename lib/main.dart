@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'pages/home_page.dart';
 import 'providers/game_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/file_system_service.dart';
 import 'services/log_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
@@ -36,7 +37,7 @@ Future<void> main() async {
   }
 
   final storage = await StorageService.instance;
-  await LogService.init();
+  await LogService.init(logRoot: FileSystemService.instance.getLogRoot);
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
   runApp(SnakeApp(storage: storage));
