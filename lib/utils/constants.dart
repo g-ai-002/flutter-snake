@@ -2,7 +2,7 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = '贪吃蛇';
-  static const String version = '0.3.4';
+  static const String version = '0.3.5';
 
   static const String prefKeyDarkMode = 'dark_mode';
   static const String prefKeyHighScore = 'high_score';
