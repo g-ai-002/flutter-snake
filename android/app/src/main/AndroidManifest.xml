@@ -2,7 +2,7 @@
     package="com.flutter.snake">
 
     <application
-        android:label="贪吃蛇"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
