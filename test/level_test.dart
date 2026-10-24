@@ -104,7 +104,7 @@ void main() {
         audioEnabled: false,
       );
       game.startWithLayout(
-        const LevelLayout(walls: <Point>{Point(11, 10)}),
+        LevelLayout(walls: <Point>{Point(11, 10)}),
       );
       game.tick();
       expect(game.isOver, isTrue);
@@ -117,7 +117,7 @@ void main() {
         audioEnabled: false,
       );
       game.startWithLayout(
-        const LevelLayout(walls: <Point>{Point(11, 10)}),
+        LevelLayout(walls: <Point>{Point(11, 10)}),
       );
       game.activatePowerUp(PowerUpType.shield);
       final head = game.state.snake.head;
@@ -134,7 +134,7 @@ void main() {
         audioEnabled: false,
       );
       game.startWithLayout(
-        const LevelLayout(
+        LevelLayout(
           portals: <Point, Point>{
             Point(11, 10): Point(2, 10),
             Point(2, 10): Point(11, 10),

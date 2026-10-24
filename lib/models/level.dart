@@ -82,8 +82,8 @@ LevelLayout buildLevelLayout(LevelType type, int columns, int rows) {
 
 Set<Point> _borderWalls(int columns, int rows, int center, int middle) {
   const inset = 2;
-  final left = inset;
-  final top = inset;
+  const left = inset;
+  const top = inset;
   final right = columns - inset - 1;
   final bottom = rows - inset - 1;
 
@@ -143,8 +143,8 @@ Set<Point> _mazeWalls(int columns, int rows, int center, int middle) {
     },
   );
 
-  final left = 5;
-  final top = 5;
+  const left = 5;
+  const top = 5;
   final right = columns - 6;
   final bottom = rows - 6;
   if (right - left >= 2 && bottom - top >= 2) {

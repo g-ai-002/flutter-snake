@@ -9,6 +9,7 @@ import '../game/overlays/pause_overlay.dart';
 import '../game/power_up_style.dart';
 import '../game/snake_game.dart';
 import '../models/game_state.dart';
+import '../models/level.dart';
 import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';

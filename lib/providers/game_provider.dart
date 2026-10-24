@@ -13,7 +13,7 @@ import '../services/storage_service.dart';
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
   final Random _random;
-  final bool _audioEnabled;
+  final bool audioEnabled;
   GameState _state;
   Direction _nextDirection = Direction.right;
   bool _directionLocked = false;
@@ -27,9 +27,8 @@ class GameProvider extends ChangeNotifier {
   GameProvider(
     this._storage, {
     Random? random,
-    bool audioEnabled = true,
+    this.audioEnabled = true,
   })  : _random = random ?? Random(),
-        _audioEnabled = audioEnabled,
         _state = GameState(
           snake: Snake(
             body: [
@@ -169,7 +168,6 @@ class GameProvider extends ChangeNotifier {
       snake: Snake(body: body),
       food: _randomFood(w, h, body, layout),
       status: GameStatus.playing,
-      score: 0,
       highScore: _state.highScore,
       boardWidth: w,
       boardHeight: h,
@@ -252,7 +250,7 @@ class GameProvider extends ChangeNotifier {
         _shieldCharges = 0;
         _effects.remove(PowerUpType.shield);
         _effectNotifyTimer = 0;
-        if (_audioEnabled) {
+        if (audioEnabled) {
           AudioService().playShieldBreak();
         }
         LogService.info('护盾抵挡了一次碰撞');
@@ -289,13 +287,13 @@ class GameProvider extends ChangeNotifier {
       );
       if (food.type == null) {
         LogService.info('吃到食物, 得分: $newScore');
-        if (_audioEnabled) {
+        if (audioEnabled) {
           AudioService().playEat();
         }
       } else {
         _activate(food.type!);
         LogService.info('拾取道具: ${food.type!.label}, 得分: $newScore');
-        if (_audioEnabled) {
+        if (audioEnabled) {
           AudioService().playPowerUp();
         }
       }
@@ -333,7 +331,7 @@ class GameProvider extends ChangeNotifier {
 
   void _gameOver() {
     LogService.info('游戏结束, 得分: ${_state.score}');
-    if (_audioEnabled) {
+    if (audioEnabled) {
       AudioService().playGameOver();
     }
     LeaderboardService.addScore(_state.score);

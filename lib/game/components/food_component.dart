@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../models/game_state.dart';
 import '../../models/skin.dart';
 import '../power_up_style.dart';
 import '../skins/skin_sprites.dart';
