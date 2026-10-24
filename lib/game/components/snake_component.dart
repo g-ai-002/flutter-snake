@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/game_state.dart';
+import '../power_up_style.dart';
 import 'board_layer_component.dart';
 
 /// 蛇身与蛇头（含朝向眼睛）。
@@ -24,6 +25,7 @@ class SnakeComponent extends BoardLayerComponent {
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.4
     ..strokeCap = StrokeCap.round;
+  final Paint _auraPaint = Paint();
 
   List<Point> _previousBody = const [];
   double _progress = 1;
@@ -83,6 +85,7 @@ class SnakeComponent extends BoardLayerComponent {
     } else {
       _drawEyes(canvas, headCenter);
     }
+    _drawAuras(canvas, headCenter);
   }
 
   Point _sourcePoint(
@@ -117,6 +120,21 @@ class SnakeComponent extends BoardLayerComponent {
   Offset _interpolatedCenter(Point from, Point to, double t) {
     final topLeft = _interpolatedTopLeft(from, to, t);
     return topLeft + Offset(cellSize / 2, cellSize / 2);
+  }
+
+  void _drawAuras(Canvas canvas, Offset center) {
+    final effects = provider.activeEffects;
+    if (effects.isEmpty) return;
+
+    var radius = cellSize * 0.72;
+    _auraPaint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+    for (final effect in effects) {
+      _auraPaint.color = powerUpColor(effect.type).withValues(alpha: 0.55);
+      canvas.drawCircle(center, radius, _auraPaint);
+      radius += cellSize * 0.16;
+    }
   }
 
   void _drawEyes(Canvas canvas, Offset center) {

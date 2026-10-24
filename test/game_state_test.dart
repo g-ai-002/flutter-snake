@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_snake/models/game_state.dart';
+import 'package:flutter_snake/models/power_up.dart';
 
 void main() {
   group('Point', () {
@@ -66,6 +67,20 @@ void main() {
     test('Food 创建', () {
       const food = Food(Point(3, 7));
       expect(food.position, const Point(3, 7));
+    });
+
+    test('Food 可携带道具类型', () {
+      const food = Food(Point(3, 7), type: PowerUpType.shield);
+      expect(food.position, const Point(3, 7));
+      expect(food.type, PowerUpType.shield);
+    });
+  });
+
+  group('PowerUpType', () {
+    test('标签、短标签与时长', () {
+      expect(PowerUpType.shield.label, '护盾');
+      expect(PowerUpType.speedUp.durationSeconds, 6);
+      expect(PowerUpType.doubleScore.shortLabel, 'x2');
     });
   });
 

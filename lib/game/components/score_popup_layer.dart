@@ -2,31 +2,39 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 
-/// 吃食物时的分数飘字层。
+/// 吃食物/道具时的分数飘字层。
 class ScorePopupLayer extends Component {
   ScorePopupLayer({required Color color})
-      : _paint = TextPaint(
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            shadows: const [
-              Shadow(
-                color: Colors.black45,
-                blurRadius: 4,
-                offset: Offset(0, 1),
-              ),
-            ],
-          ),
+      : _baseColor = color,
+        _style = TextStyle(
+          color: color,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          shadows: const [
+            Shadow(
+              color: Colors.black45,
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
         super(priority: 6);
 
-  final TextPaint _paint;
+  final Color _baseColor;
+  final TextStyle _style;
 
-  void show(Vector2 position, String text, double rise) {
+  void show(
+    Vector2 position,
+    String text,
+    double rise, {
+    Color? color,
+  }) {
+    final paint = TextPaint(
+      style: _style.copyWith(color: color ?? _baseColor),
+    );
     final popup = TextComponent(
       text: text,
-      textRenderer: _paint,
+      textRenderer: paint,
       anchor: Anchor.center,
       position: position,
       priority: 6,

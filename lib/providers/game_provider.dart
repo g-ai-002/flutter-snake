@@ -1,6 +1,9 @@
 import 'dart:math';
+
 import 'package:flutter/foundation.dart';
+
 import '../models/game_state.dart';
+import '../models/power_up.dart';
 import '../services/audio_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
@@ -8,13 +11,25 @@ import '../services/storage_service.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
+  final Random _random;
   GameState _state;
   Direction _nextDirection = Direction.right;
   bool _directionLocked = false;
 
-  GameProvider(this._storage)
-      : _state = GameState(
-          snake: Snake(body: [const Point(10, 10), const Point(11, 10), const Point(12, 10)]),
+  final Map<PowerUpType, ActiveEffect> _effects = {};
+  int _shieldCharges = 0;
+  double _effectNotifyTimer = 0;
+
+  GameProvider(this._storage, {Random? random})
+      : _random = random ?? Random(),
+        _state = GameState(
+          snake: Snake(
+            body: [
+              const Point(10, 10),
+              const Point(11, 10),
+              const Point(12, 10),
+            ],
+          ),
           food: const Food(Point(15, 10)),
           highScore: _storage.highScore,
         );
@@ -24,6 +39,21 @@ class GameProvider extends ChangeNotifier {
   bool get isPaused => _state.status == GameStatus.paused;
   bool get isOver => _state.status == GameStatus.over;
   bool get isIdle => _state.status == GameStatus.idle;
+
+  List<ActiveEffect> get activeEffects => _effects.values.toList();
+  bool hasEffect(PowerUpType type) => _effects.containsKey(type);
+  bool get hasShield => _shieldCharges > 0;
+
+  /// 当前生效速度（含加速/减速道具）。
+  int get effectiveSpeedMs {
+    if (_effects.containsKey(PowerUpType.speedUp)) {
+      return max(60, (_state.speedMs * 0.65).round());
+    }
+    if (_effects.containsKey(PowerUpType.slowDown)) {
+      return min(600, (_state.speedMs * 1.5).round());
+    }
+    return _state.speedMs;
+  }
 
   void changeDirection(Direction dir) {
     if (_directionLocked) return;
@@ -55,16 +85,69 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
+  /// 激活一个道具效果（也用于测试）。
+  void activatePowerUp(PowerUpType type) {
+    _activate(type);
+    notifyListeners();
+  }
+
+  void _activate(PowerUpType type) {
+    if (type == PowerUpType.speedUp) {
+      _effects.remove(PowerUpType.slowDown);
+    } else if (type == PowerUpType.slowDown) {
+      _effects.remove(PowerUpType.speedUp);
+    }
+    _effects[type] = ActiveEffect(
+      type: type,
+      total: type.durationSeconds,
+    );
+    if (type == PowerUpType.shield) {
+      _shieldCharges = 1;
+    }
+    _effectNotifyTimer = 0;
+  }
+
+  /// 推进道具效果计时，由游戏循环按真实帧时间调用；暂停/倒计时时冻结。
+  void updateEffects(double dt) {
+    if (_effects.isEmpty) return;
+
+    var changed = false;
+    for (final effect in _effects.values.toList()) {
+      effect.remaining -= dt;
+      if (effect.remaining <= 0) {
+        _effects.remove(effect.type);
+        if (effect.type == PowerUpType.shield) {
+          _shieldCharges = 0;
+        }
+        changed = true;
+      }
+    }
+
+    _effectNotifyTimer += dt;
+    if (changed || _effectNotifyTimer >= 0.2) {
+      _effectNotifyTimer = 0;
+      notifyListeners();
+    }
+  }
+
   void start() {
     LogService.info('游戏开始');
     final w = _state.boardWidth;
     final h = _state.boardHeight;
     final center = w ~/ 2;
     final mid = h ~/ 2;
+    final body = [
+      Point(center - 2, mid),
+      Point(center - 1, mid),
+      Point(center, mid),
+    ];
 
+    _effects.clear();
+    _shieldCharges = 0;
+    _effectNotifyTimer = 0;
     _state = GameState(
-      snake: Snake(body: [Point(center - 2, mid), Point(center - 1, mid), Point(center, mid)]),
-      food: _randomFood(w, h, [Point(center - 2, mid), Point(center - 1, mid), Point(center, mid)]),
+      snake: Snake(body: body),
+      food: _randomFood(w, h, body),
       status: GameStatus.playing,
       score: 0,
       highScore: _state.highScore,
@@ -120,25 +203,46 @@ class GameProvider extends ChangeNotifier {
     final newHead = snake.head.move(dir);
 
     if (_isCollision(newHead, snake)) {
+      if (_shieldCharges > 0) {
+        _shieldCharges = 0;
+        _effects.remove(PowerUpType.shield);
+        _effectNotifyTimer = 0;
+        AudioService().playShieldBreak();
+        LogService.info('护盾抵挡了一次碰撞');
+        notifyListeners();
+        return;
+      }
       _gameOver();
       return;
     }
 
-    final ate = newHead == _state.food.position;
+    final food = _state.food;
+    final magnet = _effects.containsKey(PowerUpType.magnet);
+    final ate = newHead == food.position ||
+        (magnet && _isNear(newHead, food.position));
+
     final newBody = List<Point>.from(snake.body)..add(newHead);
     if (!ate) {
       newBody.removeAt(0);
     }
 
-    final newScore = ate ? _state.score + 10 : _state.score;
+    final gain = _effects.containsKey(PowerUpType.doubleScore) ? 20 : 10;
+    final newScore = ate ? _state.score + gain : _state.score;
     final previousHighScore = _state.highScore;
-    final newHighScore = newScore > previousHighScore ? newScore : previousHighScore;
+    final newHighScore =
+        newScore > previousHighScore ? newScore : previousHighScore;
 
-    Food newFood = _state.food;
+    Food newFood = food;
     if (ate) {
       newFood = _randomFood(_state.boardWidth, _state.boardHeight, newBody);
-      LogService.info('吃到食物, 得分: $newScore');
-      AudioService().playEat();
+      if (food.type == null) {
+        LogService.info('吃到食物, 得分: $newScore');
+        AudioService().playEat();
+      } else {
+        _activate(food.type!);
+        LogService.info('拾取道具: ${food.type!.label}, 得分: $newScore');
+        AudioService().playPowerUp();
+      }
     }
 
     _state = _state.copyWith(
@@ -153,6 +257,10 @@ class GameProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  bool _isNear(Point a, Point b) {
+    return (a.x - b.x).abs() + (a.y - b.y).abs() <= 1;
   }
 
   bool _isCollision(Point head, Snake snake) {
@@ -170,10 +278,14 @@ class GameProvider extends ChangeNotifier {
     LogService.info('游戏结束, 得分: ${_state.score}');
     AudioService().playGameOver();
     LeaderboardService.addScore(_state.score);
-    final newHighScore = _state.score > _state.highScore ? _state.score : _state.highScore;
+    final newHighScore =
+        _state.score > _state.highScore ? _state.score : _state.highScore;
     if (newHighScore > _state.highScore) {
       _storage.setHighScore(newHighScore);
     }
+    _effects.clear();
+    _shieldCharges = 0;
+    _effectNotifyTimer = 0;
     _state = _state.copyWith(
       status: GameStatus.over,
       highScore: newHighScore,
@@ -182,7 +294,6 @@ class GameProvider extends ChangeNotifier {
   }
 
   Food _randomFood(int w, int h, List<Point> occupied) {
-    final rng = Random();
     final occupiedSet = occupied.toSet();
     final available = <Point>[];
     for (var x = 0; x < w; x++) {
@@ -193,9 +304,20 @@ class GameProvider extends ChangeNotifier {
         }
       }
     }
+
+    final type = _random.nextDouble() < 0.28
+        ? PowerUpType.values[_random.nextInt(PowerUpType.values.length)]
+        : null;
+
     if (available.isEmpty) {
-      return Food(Point(rng.nextInt(w), rng.nextInt(h)));
+      return Food(
+        Point(_random.nextInt(w), _random.nextInt(h)),
+        type: type,
+      );
     }
-    return Food(available[rng.nextInt(available.length)]);
+    return Food(
+      available[_random.nextInt(available.length)],
+      type: type,
+    );
   }
 }

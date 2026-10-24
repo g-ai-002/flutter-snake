@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/game_state.dart';
+import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import 'components/board_component.dart';
 import 'components/board_layer_component.dart';
@@ -14,6 +15,7 @@ import 'components/food_component.dart';
 import 'components/particle_burst_component.dart';
 import 'components/score_popup_layer.dart';
 import 'components/snake_component.dart';
+import 'power_up_style.dart';
 import 'snake_world.dart';
 
 const double _worldSize = 400;
@@ -169,6 +171,8 @@ class SnakeGame extends FlameGame<SnakeWorld> {
       return;
     }
 
+    provider.updateEffects(dt);
+
     if (_comboTimer > 0) {
       _comboTimer = math.max(0.0, _comboTimer - dt);
       if (_comboTimer == 0) {
@@ -176,7 +180,7 @@ class SnakeGame extends FlameGame<SnakeWorld> {
       }
     }
 
-    final step = provider.state.speedMs / 1000;
+    final step = provider.effectiveSpeedMs / 1000;
     if (step <= 0) {
       return;
     }
@@ -184,16 +188,20 @@ class SnakeGame extends FlameGame<SnakeWorld> {
     _accumulator += dt;
     var steps = 0;
     while (_accumulator >= step && steps < _maxStepsPerFrame) {
-      final oldFood = provider.state.food.position;
+      final oldFood = provider.state.food;
       final oldScore = provider.state.score;
+      final hadShield = provider.hasShield;
 
       _accumulator -= step;
       steps++;
       _snake.beginStep();
       provider.tick();
 
+      if (hadShield && !provider.hasShield && provider.isPlaying) {
+        _onShieldBreak(provider.state.snake.head);
+      }
       if (provider.state.score > oldScore) {
-        _onEat(oldFood);
+        _onEat(oldFood, provider.state.score - oldScore);
       }
       if (!provider.isPlaying) {
         _accumulator = 0;
@@ -315,15 +323,39 @@ class SnakeGame extends FlameGame<SnakeWorld> {
     _gameOverOverlayDelay = 0.55;
   }
 
-  void _onEat(Point oldFood) {
+  void _onEat(Food food, int gain) {
     _combo = _comboTimer > 0 ? _combo + 1 : 1;
     _comboTimer = _comboWindow;
-    final label = _combo > 1 ? '+10  x$_combo' : '+10';
+    final type = food.type;
+    final pickupColor = type == null ? snakeColor : powerUpColor(type);
+    final baseLabel = type == null ? '+$gain' : '+$gain ${type.shortLabel}';
+    final label = _combo > 1 ? '$baseLabel x$_combo' : baseLabel;
     final position = Vector2(
-      (oldFood.x + 0.5) * _worldCellSize,
-      (oldFood.y + 0.5) * _worldCellSize,
+      (food.position.x + 0.5) * _worldCellSize,
+      (food.position.y + 0.5) * _worldCellSize,
     );
-    _scorePopups.show(position, label, _worldCellSize * 1.4);
+    _scorePopups.show(
+      position,
+      label,
+      _worldCellSize * 1.4,
+      color: pickupColor,
+    );
+    _particles.burst(food.position, color: pickupColor);
+  }
+
+  void _onShieldBreak(Point head) {
+    final color = powerUpColor(PowerUpType.shield);
+    final position = Vector2(
+      (head.x + 0.5) * _worldCellSize,
+      (head.y + 0.5) * _worldCellSize,
+    );
+    _particles.burst(head, color: color);
+    _scorePopups.show(
+      position,
+      'SHIELD',
+      _worldCellSize * 1.2,
+      color: color,
+    );
   }
 
   void _updateSlowMotion(double dt) {

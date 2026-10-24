@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_snake/models/game_state.dart';
+import 'package:flutter_snake/models/power_up.dart';
 import 'package:flutter_snake/providers/game_provider.dart';
 import 'package:flutter_snake/providers/settings_provider.dart';
 import 'package:flutter_snake/services/storage_service.dart';
@@ -112,6 +113,62 @@ void main() {
       game.start();
       expect(game.isPlaying, isTrue);
       expect(game.state.score, 0);
+    });
+
+    testWidgets('加速效果生效并按时过期', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+      final baseSpeed = game.state.speedMs;
+
+      game.activatePowerUp(PowerUpType.speedUp);
+      expect(game.hasEffect(PowerUpType.speedUp), isTrue);
+      expect(game.effectiveSpeedMs, lessThan(baseSpeed));
+
+      game.updateEffects(PowerUpType.speedUp.durationSeconds + 0.1);
+      expect(game.hasEffect(PowerUpType.speedUp), isFalse);
+      expect(game.effectiveSpeedMs, baseSpeed);
+    });
+
+    testWidgets('减速替换加速', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+      final baseSpeed = game.state.speedMs;
+
+      game.activatePowerUp(PowerUpType.speedUp);
+      game.activatePowerUp(PowerUpType.slowDown);
+
+      expect(game.hasEffect(PowerUpType.speedUp), isFalse);
+      expect(game.hasEffect(PowerUpType.slowDown), isTrue);
+      expect(game.effectiveSpeedMs, greaterThan(baseSpeed));
+    });
+
+    testWidgets('护盾生效并按时过期', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+
+      game.activatePowerUp(PowerUpType.shield);
+      expect(game.hasShield, isTrue);
+      expect(game.hasEffect(PowerUpType.shield), isTrue);
+
+      game.updateEffects(PowerUpType.shield.durationSeconds + 0.1);
+      expect(game.hasShield, isFalse);
+      expect(game.hasEffect(PowerUpType.shield), isFalse);
+    });
+
+    testWidgets('双倍分与磁铁可同时生效', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+
+      game.activatePowerUp(PowerUpType.doubleScore);
+      game.activatePowerUp(PowerUpType.magnet);
+
+      expect(game.hasEffect(PowerUpType.doubleScore), isTrue);
+      expect(game.hasEffect(PowerUpType.magnet), isTrue);
+      expect(game.activeEffects.length, 2);
     });
 
     testWidgets('tick 按当前方向移动蛇头', (WidgetTester tester) async {

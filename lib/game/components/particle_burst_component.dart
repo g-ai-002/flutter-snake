@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/game_state.dart';
 import 'board_layer_component.dart';
 
-/// 吃到食物时在旧食物位置炸开的粒子层。
+/// 吃到食物/道具时在拾取位置炸开的粒子层。
 class ParticleBurstComponent extends BoardLayerComponent {
   ParticleBurstComponent({
     required super.provider,
@@ -19,7 +19,8 @@ class ParticleBurstComponent extends BoardLayerComponent {
   final List<_Particle> _particles = [];
   final Paint _paint = Paint();
 
-  void burst(Point cell) {
+  void burst(Point cell, {Color? color}) {
+    final burstColor = color ?? this.color;
     final center = Vector2(
       cell.x * cellSize + cellSize / 2,
       cell.y * cellSize + cellSize / 2,
@@ -39,6 +40,7 @@ class ParticleBurstComponent extends BoardLayerComponent {
           remaining: life,
           total: life,
           radius: cellSize * (0.05 + _random.nextDouble() * 0.07),
+          color: burstColor,
         ),
       );
     }
@@ -67,7 +69,7 @@ class ParticleBurstComponent extends BoardLayerComponent {
       final life = (particle.remaining / particle.total)
           .clamp(0.0, 1.0)
           .toDouble();
-      _paint.color = color.withValues(alpha: 0.85 * life);
+      _paint.color = particle.color.withValues(alpha: 0.85 * life);
       canvas.drawCircle(
         Offset(particle.position.x, particle.position.y),
         particle.radius * (0.6 + 0.4 * life),
@@ -84,6 +86,7 @@ class _Particle {
     required this.remaining,
     required this.total,
     required this.radius,
+    required this.color,
   });
 
   Vector2 position;
@@ -91,4 +94,5 @@ class _Particle {
   double remaining;
   final double total;
   final double radius;
+  final Color color;
 }

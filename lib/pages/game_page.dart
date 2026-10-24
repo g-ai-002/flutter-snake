@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 import '../game/overlays/countdown_overlay.dart';
 import '../game/overlays/game_over_overlay.dart';
 import '../game/overlays/pause_overlay.dart';
+import '../game/power_up_style.dart';
 import '../game/snake_game.dart';
 import '../models/game_state.dart';
+import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/gesture_control.dart';
@@ -156,6 +158,24 @@ class _GamePageState extends State<GamePage> {
                   },
                 ),
               ),
+              Consumer<GameProvider>(
+                builder: (context, game, _) {
+                  final effects = game.activeEffects;
+                  if (effects.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: effects
+                          .map((effect) => _EffectChip(effect: effect))
+                          .toList(),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 8),
               Expanded(
                 child: GestureControl(
@@ -229,6 +249,40 @@ class _GamePageState extends State<GamePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EffectChip extends StatelessWidget {
+  const _EffectChip({required this.effect});
+
+  final ActiveEffect effect;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = powerUpColor(effect.type);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(powerUpIcon(effect.type), size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            '${effect.type.label} ${effect.remaining.ceil()}s',
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

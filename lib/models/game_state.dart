@@ -1,3 +1,5 @@
+import 'power_up.dart';
+
 enum Direction { up, down, left, right }
 
 enum GameStatus { idle, playing, paused, over }
@@ -52,8 +54,9 @@ class Snake {
 
 class Food {
   final Point position;
+  final PowerUpType? type;
 
-  const Food(this.position);
+  const Food(this.position, {this.type});
 }
 
 class GameState {

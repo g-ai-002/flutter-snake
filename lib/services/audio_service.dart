@@ -38,6 +38,9 @@ class AudioService {
     _tone(660, 80);
     _tone(220, 200);
     _tone(165, 400);
+    _tone(880, 90);
+    _tone(1175, 110);
+    _tone(300, 140);
     _bgmLoop ??= _generateBgmLoop();
     _guard(_player.setVolume(1.0));
   }
@@ -60,6 +63,18 @@ class AudioService {
     await _playTone(220, 200);
     await Future.delayed(const Duration(milliseconds: 100));
     await _playTone(165, 400);
+  }
+
+  Future<void> playPowerUp() async {
+    if (_muted) return;
+    await _playTone(880, 90);
+    await Future.delayed(const Duration(milliseconds: 70));
+    await _playTone(1175, 110);
+  }
+
+  Future<void> playShieldBreak() async {
+    if (_muted) return;
+    await _playTone(300, 140);
   }
 
   Future<void> _playTone(int freq, int durationMs) async {
