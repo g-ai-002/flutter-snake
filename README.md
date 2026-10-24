@@ -34,24 +34,15 @@
 
 ## 下载
 
-### v0.3.1
+### v0.8.0（当前版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0)
 
-### v0.3.0
+### 历史版本
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0)
-
-### v0.2.2
-
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2)
-
-### v0.1.0 ~ v0.2.1（历史版本）
-
-- [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
+- [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
@@ -89,8 +80,8 @@ python .build/generate_sprites.py
 Windows ZIP，并在对应平台自动创建 Release：
 
 ```bash
-git tag v0.3.1
-git push origin v0.3.1
+git tag v0.8.0
+git push origin v0.8.0
 ```
 
 构建产物的版本号取自 `pubspec.yaml` 的 `version` 字段，标签版本号优先；应用内展示的版本号
