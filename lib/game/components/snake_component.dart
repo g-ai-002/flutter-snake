@@ -4,6 +4,9 @@ import '../../models/game_state.dart';
 import 'board_layer_component.dart';
 
 /// 蛇身与蛇头（含朝向眼睛）。
+///
+/// 逻辑层仍按格推进；渲染时用上一格位置与当前格位置做线性插值，
+/// 让蛇在两次 tick 之间平滑滑动，而不是整格跳动。
 class SnakeComponent extends BoardLayerComponent {
   SnakeComponent({
     required super.provider,
@@ -16,44 +19,127 @@ class SnakeComponent extends BoardLayerComponent {
   final Paint _bodyPaint = Paint()..style = PaintingStyle.fill;
   final Paint _eyePaint = Paint()..color = Colors.white;
   final Paint _pupilPaint = Paint()..color = Colors.black;
+  final Paint _crossPaint = Paint()
+    ..color = Colors.black
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.4
+    ..strokeCap = StrokeCap.round;
+
+  List<Point> _previousBody = const [];
+  double _progress = 1;
+
+  /// 新一局开始时直接对齐当前身体，避免从上一局位置滑过来。
+  void snapToCurrent() {
+    _previousBody = List<Point>.of(provider.state.snake.body);
+    _progress = 1;
+  }
+
+  /// 在逻辑推进前记录旧身体，供本格滑动插值使用。
+  void beginStep() {
+    _previousBody = List<Point>.of(provider.state.snake.body);
+    _progress = 0;
+  }
+
+  void setProgress(double value) {
+    _progress = value.clamp(0.0, 1.0).toDouble();
+  }
 
   @override
   void render(Canvas canvas) {
     final body = provider.state.snake.body;
+    if (body.isEmpty) return;
+
+    final from = _previousBody;
+    final t = _progress.clamp(0.0, 1.0).toDouble();
+
     for (var i = 0; i < body.length; i++) {
-      final point = body[i];
+      final target = body[i];
+      final source = _sourcePoint(from, i, target);
+      final topLeft = _interpolatedTopLeft(source, target, t);
       final isHead = i == body.length - 1;
       final alpha = 0.4 + (0.6 * i / body.length);
 
       _bodyPaint.color = color.withValues(alpha: alpha);
       final rect = RRect.fromRectAndRadius(
-        cellRect(point.x, point.y),
+        Rect.fromLTWH(
+          topLeft.dx + 1,
+          topLeft.dy + 1,
+          cellSize - 2,
+          cellSize - 2,
+        ),
         Radius.circular(isHead ? 6 : 3),
       );
       canvas.drawRRect(rect, _bodyPaint);
+    }
 
-      if (isHead) {
-        _drawEyes(canvas, point);
-      }
+    final headSource = _sourcePoint(from, body.length - 1, body.last);
+    final headCenter = _interpolatedCenter(headSource, body.last, t);
+    if (provider.state.status == GameStatus.over) {
+      _drawDeadEyes(canvas, headCenter);
+    } else {
+      _drawEyes(canvas, headCenter);
     }
   }
 
-  void _drawEyes(Canvas canvas, Point head) {
+  Point _sourcePoint(List<Point> from, int index, Point fallback) {
+    if (index < from.length) {
+      return from[index];
+    }
+    if (from.isNotEmpty) {
+      return from.last;
+    }
+    return fallback;
+  }
+
+  Offset _interpolatedTopLeft(Point from, Point to, double t) {
+    final x = from.x + (to.x - from.x) * t;
+    final y = from.y + (to.y - from.y) * t;
+    return Offset(x * cellSize, y * cellSize);
+  }
+
+  Offset _interpolatedCenter(Point from, Point to, double t) {
+    final topLeft = _interpolatedTopLeft(from, to, t);
+    return topLeft + Offset(cellSize / 2, cellSize / 2);
+  }
+
+  void _drawEyes(Canvas canvas, Offset center) {
     final eyeRadius = cellSize * 0.12;
     final pupilRadius = cellSize * 0.06;
-    final centerX = head.x * cellSize + cellSize / 2;
-    final centerY = head.y * cellSize + cellSize / 2;
-
     final offsets = _eyeOffsets(provider.state.snake.direction);
-    final leftEye = Offset(centerX + offsets[0], centerY + offsets[1]);
-    final rightEye = Offset(centerX + offsets[2], centerY + offsets[3]);
-    final leftPupil = Offset(centerX + offsets[4], centerY + offsets[5]);
-    final rightPupil = Offset(centerX + offsets[6], centerY + offsets[7]);
+    final leftEye = center + Offset(offsets[0], offsets[1]);
+    final rightEye = center + Offset(offsets[2], offsets[3]);
+    final leftPupil = center + Offset(offsets[4], offsets[5]);
+    final rightPupil = center + Offset(offsets[6], offsets[7]);
 
     canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
     canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
     canvas.drawCircle(leftPupil, pupilRadius, _pupilPaint);
     canvas.drawCircle(rightPupil, pupilRadius, _pupilPaint);
+  }
+
+  void _drawDeadEyes(Canvas canvas, Offset center) {
+    final eyeRadius = cellSize * 0.12;
+    final offsets = _eyeOffsets(provider.state.snake.direction);
+    final leftEye = center + Offset(offsets[0], offsets[1]);
+    final rightEye = center + Offset(offsets[2], offsets[3]);
+
+    canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
+    canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
+    _drawCross(canvas, leftEye, eyeRadius * 0.55);
+    _drawCross(canvas, rightEye, eyeRadius * 0.55);
+  }
+
+  void _drawCross(Canvas canvas, Offset center, double radius) {
+    canvas.drawLine(
+      center + Offset(-radius, -radius),
+      center + Offset(radius, radius),
+      _crossPaint,
+    );
+    canvas.drawLine(
+      center + Offset(radius, -radius),
+      center + Offset(-radius, radius),
+      _crossPaint,
+    );
   }
 
   List<double> _eyeOffsets(Direction dir) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../game/overlays/pause_overlay.dart';
 import '../game/snake_game.dart';
 import '../models/game_state.dart';
 import '../providers/game_provider.dart';
@@ -168,6 +169,10 @@ class _GamePageState extends State<GamePage> {
                             game: game,
                             focusNode: _gameFocusNode,
                             autofocus: false,
+                            overlayBuilderMap: {
+                              SnakeGame.pauseOverlayId: (_, SnakeGame game) =>
+                                  PauseOverlay(provider: game.provider),
+                            },
                           ),
                         ),
                       ),
