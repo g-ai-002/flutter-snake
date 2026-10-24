@@ -19,6 +19,7 @@
 - [x] 音效反馈（后续版本）
 - [x] 排行榜（后续版本）
 - [x] 双流水线构建与发布（GitHub Actions / Gitea Actions，push tag 自动发布 Windows + Android 交付件）
+- [x] 基于 Flame 引擎的组件化渲染与游戏循环
 
 ## 短期目标
 - 持续按 prompt.md 的版本节奏：新功能 → patch 修复 → patch 重构
@@ -27,7 +28,19 @@
 
 ## 版本历史
 
-### v0.3.1 (PATCH) — 当前开发中
+### v0.4.0 (MINOR) — 当前开发中
+- **状态**: 开发完成（待 CI 验证）
+- **目标**: 将游戏渲染与主循环迁移到 Flame 引擎
+- **任务**:
+  - [x] 引入 Flame 1.38.2，棋盘改为组件化渲染（背景/网格、食物、蛇身）
+  - [x] 游戏循环由 `Timer.periodic` 迁移到 `FlameGame.update(dt)` 累积步进
+  - [x] 游戏页改用 `GameWidget` 承载棋盘，保留手势与键盘控制
+  - [x] 进入游戏时同步设置中的棋盘大小与速度
+  - [x] 修复吃到食物后最高分未立即持久化的问题
+  - [x] 补充 Flame 驱动入口 `tick()` 的单元测试
+  - [x] 版本号 0.3.6 → 0.4.0
+
+### v0.3.1 (PATCH)
 - **状态**: 开发完成 ✅
 - **目标**: 补齐 Gitea 流水线的标签发布能力，统一双流水线的发布方式
 - **任务**:
@@ -127,8 +140,9 @@
 - Dart: 3.13.5（对应 Flutter 3.47.7 内置 Dart SDK）
 - Android SDK: compileSdk=37 / targetSdk=37 / minSdk=35（只保留最新 3 个 Android 大版本），NDK 30.0.16248370
 - provider: 6.1.5+1
-- shared_preferences: 2.5.5
-- path_provider: 2.1.5
+- flame: 1.38.2
+- shared_preferences: 2.5.6
+- path_provider: 2.1.6
 - path: 1.9.1
-- window_manager: 0.5.1
-- audioplayers: 6.5.1
+- window_manager: 0.5.2
+- audioplayers: 6.8.1
