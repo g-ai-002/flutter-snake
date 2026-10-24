@@ -21,6 +21,7 @@
 - [x] 双流水线构建与发布（GitHub Actions / Gitea Actions，push tag 自动发布 Windows + Android 交付件）
 - [x] 基于 Flame 引擎的组件化渲染与游戏循环
 - [x] 基于 Flame 的平滑移动、粒子与暂停 overlay
+- [x] 基于 Flame 的相机、飘字、倒计时/结算与背景音乐
 
 ## 短期目标
 - 持续按 prompt.md 的版本节奏：新功能 → patch 修复 → patch 重构
@@ -29,7 +30,19 @@
 
 ## 版本历史
 
-### v0.5.0 (MINOR) — 当前开发中
+### v0.6.0 (MINOR) — 当前开发中
+- **状态**: 开发完成（待 CI 验证）
+- **目标**: 用相机、飘字、倒计时/结算、慢动作与音频把 Flame 体验做完整
+- **任务**:
+  - [x] 分数飘字与连吃提示（TextComponent + effects）
+  - [x] 棋盘迁入 World + 固定分辨率 CameraComponent，吃食物 zoom、死亡抖动
+  - [x] 开局 3-2-1-GO 倒计时 overlay
+  - [x] 游戏结束结算 overlay（得分/最高分/再来一局）
+  - [x] 死亡慢动作（HasTimeScale）
+  - [x] 音效预加载 + 循环背景音乐
+  - [x] 版本号 0.5.0 → 0.6.0
+
+### v0.5.0 (MINOR)
 - **状态**: 开发完成（待 CI 验证）
 - **目标**: 用 Flame 动画与 overlay 做可见的效果升级
 - **任务**:
