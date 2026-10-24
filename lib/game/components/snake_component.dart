@@ -51,10 +51,13 @@ class SnakeComponent extends BoardLayerComponent {
 
     final from = _previousBody;
     final t = _progress.clamp(0.0, 1.0).toDouble();
+    // 吃到食物时身体会多一格：把旧身体整体前移一格插值，
+    // 只让新尾巴留在原处，避免增长那一 tick 整条蛇停住。
+    final grew = body.length == from.length + 1;
 
     for (var i = 0; i < body.length; i++) {
       final target = body[i];
-      final source = _sourcePoint(from, i, target);
+      final source = _sourcePoint(from, i, target, grew: grew);
       final topLeft = _interpolatedTopLeft(source, target, t);
       final isHead = i == body.length - 1;
       final alpha = 0.4 + (0.6 * i / body.length);
@@ -72,7 +75,8 @@ class SnakeComponent extends BoardLayerComponent {
       canvas.drawRRect(rect, _bodyPaint);
     }
 
-    final headSource = _sourcePoint(from, body.length - 1, body.last);
+    final headSource =
+        _sourcePoint(from, body.length - 1, body.last, grew: grew);
     final headCenter = _interpolatedCenter(headSource, body.last, t);
     if (provider.state.status == GameStatus.over) {
       _drawDeadEyes(canvas, headCenter);
@@ -81,8 +85,21 @@ class SnakeComponent extends BoardLayerComponent {
     }
   }
 
-  Point _sourcePoint(List<Point> from, int index, Point fallback) {
-    if (index < from.length) {
+  Point _sourcePoint(
+    List<Point> from,
+    int index,
+    Point fallback, {
+    required bool grew,
+  }) {
+    if (grew) {
+      if (index == 0) {
+        return fallback;
+      }
+      final sourceIndex = index - 1;
+      if (sourceIndex < from.length) {
+        return from[sourceIndex];
+      }
+    } else if (index < from.length) {
       return from[index];
     }
     if (from.isNotEmpty) {
