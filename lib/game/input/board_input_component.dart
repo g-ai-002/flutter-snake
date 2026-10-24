@@ -26,16 +26,19 @@ class BoardInputComponent extends BoardLayerComponent
 
   @override
   void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
     _dragDelta = Vector2.zero();
   }
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
     _dragDelta += event.localDelta;
   }
 
   @override
   void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
     final delta = _dragDelta;
     _dragDelta = Vector2.zero();
     if (delta.length < swipeThreshold) return;
@@ -46,6 +49,7 @@ class BoardInputComponent extends BoardLayerComponent
 
   @override
   void onDragCancel(DragCancelEvent event) {
+    super.onDragCancel(event);
     _dragDelta = Vector2.zero();
   }
 }

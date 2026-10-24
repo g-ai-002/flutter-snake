@@ -176,7 +176,6 @@ class _GamePageState extends State<GamePage> {
                                 child: GameWidget<SnakeGame>(
                                   game: game,
                                   focusNode: _gameFocusNode,
-                                  autofocus: true,
                                   overlayBuilderMap: {
                                     SnakeGame.pauseOverlayId:
                                         (_, SnakeGame game) => PauseOverlay(
