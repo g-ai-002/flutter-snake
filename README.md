@@ -1,9 +1,10 @@
 # 贪吃蛇 🐍
 
-经典贪吃蛇游戏，基于 Flutter 开发，支持 Android 和 Windows 双平台。
+经典贪吃蛇游戏，基于 Flutter + Flame 引擎开发，支持 Android 和 Windows 双平台。
 
 ## 功能
 
+- 🔥 基于 Flame 引擎的组件化棋盘渲染与游戏主循环
 - 🎮 经典贪吃蛇玩法：移动、吃食物、增长、碰撞检测
 - 🎯 三种难度：慢速 / 中速 / 快速
 - 📐 三种棋盘大小：15×15 / 20×20 / 25×25
@@ -75,6 +76,7 @@ git push origin v0.3.1
 ## 技术栈
 
 - Flutter 3.47.7
+- Flame 1.38.2（棋盘渲染与游戏主循环）
 - Provider 状态管理
 - Material 3 设计
 - SharedPreferences 持久化

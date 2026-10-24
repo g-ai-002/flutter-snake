@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/game_state.dart';
@@ -9,7 +8,6 @@ import '../services/storage_service.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
-  Timer? _timer;
   GameState _state;
   Direction _nextDirection = Direction.right;
   bool _directionLocked = false;
@@ -72,14 +70,12 @@ class GameProvider extends ChangeNotifier {
     _nextDirection = Direction.right;
     _directionLocked = false;
     notifyListeners();
-    _startTimer();
   }
 
   void pause() {
     if (_state.status != GameStatus.playing) return;
     LogService.info('游戏暂停');
     _state = _state.copyWith(status: GameStatus.paused);
-    _timer?.cancel();
     notifyListeners();
   }
 
@@ -88,7 +84,6 @@ class GameProvider extends ChangeNotifier {
     LogService.info('游戏继续');
     _state = _state.copyWith(status: GameStatus.playing);
     notifyListeners();
-    _startTimer();
   }
 
   void togglePause() {
@@ -109,14 +104,8 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(Duration(milliseconds: _state.speedMs), (_) {
-      _tick();
-    });
-  }
-
-  void _tick() {
+  /// 推进一次游戏逻辑，由 Flame 按当前移动间隔调用。
+  void tick() {
     if (_state.status != GameStatus.playing) return;
 
     final snake = _state.snake;
@@ -137,7 +126,8 @@ class GameProvider extends ChangeNotifier {
     }
 
     final newScore = ate ? _state.score + 10 : _state.score;
-    final newHighScore = newScore > _state.highScore ? newScore : _state.highScore;
+    final previousHighScore = _state.highScore;
+    final newHighScore = newScore > previousHighScore ? newScore : previousHighScore;
 
     Food newFood = _state.food;
     if (ate) {
@@ -153,7 +143,7 @@ class GameProvider extends ChangeNotifier {
       highScore: newHighScore,
     );
 
-    if (newHighScore > _state.highScore) {
+    if (newHighScore > previousHighScore) {
       _storage.setHighScore(newHighScore);
     }
 
@@ -173,7 +163,6 @@ class GameProvider extends ChangeNotifier {
 
   void _gameOver() {
     LogService.info('游戏结束, 得分: ${_state.score}');
-    _timer?.cancel();
     AudioService().playGameOver();
     LeaderboardService.addScore(_state.score);
     final newHighScore = _state.score > _state.highScore ? _state.score : _state.highScore;
@@ -203,11 +192,5 @@ class GameProvider extends ChangeNotifier {
       return Food(Point(rng.nextInt(w), rng.nextInt(h)));
     }
     return Food(available[rng.nextInt(available.length)]);
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 }

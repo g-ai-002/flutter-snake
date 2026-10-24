@@ -114,6 +114,40 @@ void main() {
       expect(game.state.score, 0);
     });
 
+    testWidgets('tick 按当前方向移动蛇头', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+      game.start();
+
+      final state = game.state;
+      final head = state.snake.head;
+      // 避开食物所在格，保证不会随机吃到食物
+      final dir = head.move(Direction.up) == state.food.position
+          ? Direction.down
+          : Direction.up;
+      final expected = head.move(dir);
+
+      game.changeDirection(dir);
+      game.tick();
+
+      expect(game.state.snake.head, expected);
+      expect(game.state.snake.direction, dir);
+    });
+
+    testWidgets('暂停时 tick 不移动蛇', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final game = tester.element(find.byType(MaterialApp)).read<GameProvider>();
+      game.start();
+      game.pause();
+
+      final head = game.state.snake.head;
+      game.tick();
+
+      expect(game.state.snake.head, head);
+    });
+
     testWidgets('pause 和 resume', (WidgetTester tester) async {
       final storage = FakeStorageService.create();
       await tester.pumpWidget(buildTestApp(storage));
@@ -144,7 +178,7 @@ void main() {
       game.start();
       // 初始方向是 right，尝试改为 left 应被忽略
       game.changeDirection(Direction.left);
-      // 方向锁在 _tick 中释放，这里只验证 changeDirection 不抛异常
+      // 方向锁在下一次 tick 中释放，这里只验证 changeDirection 不抛异常
       expect(game.isPlaying, isTrue);
     });
 
