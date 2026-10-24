@@ -158,92 +158,113 @@ class _GamePageState extends State<GamePage> {
                   },
                 ),
               ),
-              Consumer<GameProvider>(
-                builder: (context, game, _) {
-                  final effects = game.activeEffects;
-                  if (effects.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: effects
-                          .map((effect) => _EffectChip(effect: effect))
-                          .toList(),
-                    ),
-                  );
-                },
-              ),
               const SizedBox(height: 8),
               Expanded(
-                child: GestureControl(
-                  onDirection: provider.changeDirection,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: AspectRatio(
-                        aspectRatio: state.boardWidth / state.boardHeight,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: GameWidget<SnakeGame>(
-                            game: game,
-                            focusNode: _gameFocusNode,
-                            autofocus: false,
-                            overlayBuilderMap: {
-                              SnakeGame.pauseOverlayId: (_, SnakeGame game) =>
-                                  PauseOverlay(provider: game.provider),
-                              SnakeGame.countdownOverlayId:
-                                  (_, SnakeGame game) => CountdownOverlay(
-                                        countdown: game.countdown,
-                                      ),
-                              SnakeGame.gameOverOverlayId:
-                                  (_, SnakeGame game) => GameOverOverlay(
-                                        provider: game.provider,
-                                      ),
-                            },
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: GestureControl(
+                        onDirection: provider.changeDirection,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: AspectRatio(
+                              aspectRatio: state.boardWidth / state.boardHeight,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: GameWidget<SnakeGame>(
+                                  game: game,
+                                  focusNode: _gameFocusNode,
+                                  autofocus: false,
+                                  overlayBuilderMap: {
+                                    SnakeGame.pauseOverlayId:
+                                        (_, SnakeGame game) => PauseOverlay(
+                                              provider: game.provider,
+                                            ),
+                                    SnakeGame.countdownOverlayId:
+                                        (_, SnakeGame game) => CountdownOverlay(
+                                              countdown: game.countdown,
+                                            ),
+                                    SnakeGame.gameOverOverlayId:
+                                        (_, SnakeGame game) => GameOverOverlay(
+                                              provider: game.provider,
+                                            ),
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      top: 8,
+                      left: 16,
+                      right: 16,
+                      child: IgnorePointer(
+                        child: Consumer<GameProvider>(
+                          builder: (context, game, _) {
+                            final effects = game.activeEffects;
+                            if (effects.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Align(
+                              alignment: Alignment.topCenter,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                alignment: WrapAlignment.center,
+                                children: effects
+                                    .map((effect) => _EffectChip(effect: effect))
+                                    .toList(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
-              Consumer<GameProvider>(
-                builder: (context, game, _) {
-                  final status = game.state.status;
-                  if (status == GameStatus.over) {
+              SizedBox(
+                height: 60,
+                child: Consumer<GameProvider>(
+                  builder: (context, game, _) {
+                    final status = game.state.status;
+                    if (status == GameStatus.playing ||
+                        status == GameStatus.paused) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            defaultTargetPlatform == TargetPlatform.windows
+                                ? '方向键 / 点击或滑动棋盘控制方向'
+                                : '点击或滑动棋盘控制方向',
+                            textAlign: TextAlign.center,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                          ),
+                        ),
+                      );
+                    }
+                    if (status == GameStatus.idle) {
+                      return Center(
+                        child: ElevatedButton.icon(
+                          onPressed: game.start,
+                          icon: const Icon(Icons.replay),
+                          label: const Text('重新开始'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(180, 44),
+                          ),
+                        ),
+                      );
+                    }
                     return const SizedBox.shrink();
-                  }
-                  if (status == GameStatus.playing ||
-                      status == GameStatus.paused) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        defaultTargetPlatform == TargetPlatform.windows
-                            ? '方向键 / 点击或滑动棋盘控制方向'
-                            : '点击或滑动棋盘控制方向',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    );
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton.icon(
-                      onPressed: game.start,
-                      icon: const Icon(Icons.replay),
-                      label: const Text('重新开始'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(180, 48),
-                      ),
-                    ),
-                  );
-                },
+                  },
+                ),
               ),
               const SizedBox(height: 16),
             ],
