@@ -158,10 +158,10 @@ class _GamePageState extends State<GamePage> {
                 child: GestureControl(
                   onDirection: provider.changeDirection,
                   child: Center(
-                    child: AspectRatio(
-                      aspectRatio: state.boardWidth / state.boardHeight,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: AspectRatio(
+                        aspectRatio: state.boardWidth / state.boardHeight,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: GameWidget<SnakeGame>(
