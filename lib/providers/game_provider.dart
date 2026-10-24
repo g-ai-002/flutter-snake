@@ -37,6 +37,11 @@ class GameProvider extends ChangeNotifier {
     _directionLocked = true;
   }
 
+  /// 倒计时等尚未推进的阶段允许重新选择方向。
+  void unlockDirection() {
+    _directionLocked = false;
+  }
+
   Direction _opposite(Direction d) {
     switch (d) {
       case Direction.up:

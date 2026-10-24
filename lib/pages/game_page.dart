@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../game/overlays/countdown_overlay.dart';
+import '../game/overlays/game_over_overlay.dart';
 import '../game/overlays/pause_overlay.dart';
 import '../game/snake_game.dart';
 import '../models/game_state.dart';
@@ -172,6 +174,14 @@ class _GamePageState extends State<GamePage> {
                             overlayBuilderMap: {
                               SnakeGame.pauseOverlayId: (_, SnakeGame game) =>
                                   PauseOverlay(provider: game.provider),
+                              SnakeGame.countdownOverlayId:
+                                  (_, SnakeGame game) => CountdownOverlay(
+                                        countdown: game.countdown,
+                                      ),
+                              SnakeGame.gameOverOverlayId:
+                                  (_, SnakeGame game) => GameOverOverlay(
+                                        provider: game.provider,
+                                      ),
                             },
                           ),
                         ),
@@ -184,6 +194,9 @@ class _GamePageState extends State<GamePage> {
               Consumer<GameProvider>(
                 builder: (context, game, _) {
                   final status = game.state.status;
+                  if (status == GameStatus.over) {
+                    return const SizedBox.shrink();
+                  }
                   if (status == GameStatus.playing ||
                       status == GameStatus.paused) {
                     return Padding(

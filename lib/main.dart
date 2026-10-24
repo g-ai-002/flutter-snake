@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'pages/home_page.dart';
 import 'providers/game_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/audio_service.dart';
 import 'services/file_system_service.dart';
 import 'services/log_service.dart';
 import 'services/storage_service.dart';
@@ -40,7 +41,12 @@ Future<void> main() async {
   await LogService.init(logRoot: FileSystemService.instance.getLogRoot);
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
+  AudioService().setMuted(storage.muted);
   runApp(SnakeApp(storage: storage));
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    AudioService().prewarm();
+    AudioService().startBgm();
+  });
 }
 
 class SnakeApp extends StatelessWidget {
