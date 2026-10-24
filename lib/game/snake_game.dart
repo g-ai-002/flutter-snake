@@ -324,8 +324,6 @@ class SnakeGame extends FlameGame<SnakeWorld> {
       (oldFood.y + 0.5) * _worldCellSize,
     );
     _scorePopups.show(position, label, _worldCellSize * 1.4);
-    _zoomPulse = 1;
-    _zoomStrength = 0.025;
   }
 
   void _updateSlowMotion(double dt) {

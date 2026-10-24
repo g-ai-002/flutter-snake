@@ -35,7 +35,7 @@
 - **目标**: 用相机、飘字、倒计时/结算、慢动作与音频把 Flame 体验做完整
 - **任务**:
   - [x] 分数飘字与连吃提示（TextComponent + effects）
-  - [x] 棋盘迁入 World + 固定分辨率 CameraComponent，吃食物 zoom、死亡抖动
+  - [x] 棋盘迁入 World + 固定分辨率 CameraComponent，死亡相机抖动
   - [x] 开局 3-2-1-GO 倒计时 overlay
   - [x] 游戏结束结算 overlay（得分/最高分/再来一局）
   - [x] 死亡慢动作（HasTimeScale）
