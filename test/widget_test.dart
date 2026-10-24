@@ -2,58 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_snake/models/game_state.dart';
+import 'package:flutter_snake/models/level.dart';
 import 'package:flutter_snake/models/power_up.dart';
+import 'package:flutter_snake/models/skin.dart';
 import 'package:flutter_snake/providers/game_provider.dart';
 import 'package:flutter_snake/providers/settings_provider.dart';
-import 'package:flutter_snake/services/storage_service.dart';
 
-class FakeStorageService extends StorageService {
-  final Map<String, dynamic> _store = {};
-
-  FakeStorageService() : super.test();
-
-  static FakeStorageService create() => FakeStorageService();
-
-  @override
-  bool get darkMode => _store['dark_mode'] as bool? ?? false;
-
-  @override
-  Future<void> setDarkMode(bool v) async {
-    _store['dark_mode'] = v;
-  }
-
-  @override
-  int get highScore => _store['high_score'] as int? ?? 0;
-
-  @override
-  Future<void> setHighScore(int v) async {
-    _store['high_score'] = v;
-  }
-
-  @override
-  int get boardSize => _store['board_size'] as int? ?? 20;
-
-  @override
-  Future<void> setBoardSize(int v) async {
-    _store['board_size'] = v;
-  }
-
-  @override
-  int get speed => _store['speed'] as int? ?? 200;
-
-  @override
-  Future<void> setSpeed(int v) async {
-    _store['speed'] = v;
-  }
-
-  @override
-  bool get muted => _store['muted'] as bool? ?? false;
-
-  @override
-  Future<void> setMuted(bool v) async {
-    _store['muted'] = v;
-  }
-}
+import 'fakes/fake_storage.dart';
 
 Widget buildTestApp(FakeStorageService storage) {
   return MultiProvider(
@@ -291,6 +246,24 @@ void main() {
       await settings.setSpeed(300);
       expect(settings.speed, 300);
       expect(storage.speed, 300);
+    });
+
+    testWidgets('setLevel 持久化', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final settings = tester.element(find.byType(MaterialApp)).read<SettingsProvider>();
+      await settings.setLevel(LevelType.portals);
+      expect(settings.level, LevelType.portals);
+      expect(storage.level, LevelType.portals);
+    });
+
+    testWidgets('setSkin 持久化', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final settings = tester.element(find.byType(MaterialApp)).read<SettingsProvider>();
+      await settings.setSkin(SnakeSkin.pixel);
+      expect(settings.skin, SnakeSkin.pixel);
+      expect(storage.skin, SnakeSkin.pixel);
     });
   });
 }

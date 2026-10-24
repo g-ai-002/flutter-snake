@@ -1,4 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/level.dart';
+import '../models/skin.dart';
 import '../utils/constants.dart';
 
 class StorageService {
@@ -46,5 +48,29 @@ class StorageService {
   bool get muted => _p.getBool(AppConstants.prefKeyMuted) ?? false;
   Future<void> setMuted(bool v) async {
     try { await _p.setBool(AppConstants.prefKeyMuted, v); } catch (_) {}
+  }
+
+  LevelType get level {
+    final name = _p.getString(AppConstants.prefKeyLevel);
+    return LevelType.values.firstWhere(
+      (value) => value.name == name,
+      orElse: () => LevelType.open,
+    );
+  }
+
+  Future<void> setLevel(LevelType v) async {
+    try { await _p.setString(AppConstants.prefKeyLevel, v.name); } catch (_) {}
+  }
+
+  SnakeSkin get skin {
+    final name = _p.getString(AppConstants.prefKeySkin);
+    return SnakeSkin.values.firstWhere(
+      (value) => value.name == name,
+      orElse: () => SnakeSkin.classic,
+    );
+  }
+
+  Future<void> setSkin(SnakeSkin v) async {
+    try { await _p.setString(AppConstants.prefKeySkin, v.name); } catch (_) {}
   }
 }

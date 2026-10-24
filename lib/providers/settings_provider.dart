@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import '../models/level.dart';
+import '../models/skin.dart';
 import '../services/audio_service.dart';
 import '../services/storage_service.dart';
 import '../utils/constants.dart';
@@ -11,6 +13,8 @@ class SettingsProvider extends ChangeNotifier {
     _boardSize = _storage.boardSize;
     _speed = _storage.speed;
     _muted = _storage.muted;
+    _level = _storage.level;
+    _skin = _storage.skin;
     AudioService().setMuted(_muted);
   }
 
@@ -18,11 +22,18 @@ class SettingsProvider extends ChangeNotifier {
   late int _boardSize;
   late int _speed;
   late bool _muted;
+  late LevelType _level;
+  late SnakeSkin _skin;
 
   bool get darkMode => _darkMode;
   int get boardSize => _boardSize;
   int get speed => _speed;
   bool get muted => _muted;
+  LevelType get level => _level;
+  SnakeSkin get skin => _skin;
+
+  String get levelLabel => _level.label;
+  String get skinLabel => _skin.label;
 
   String get speedLabel {
     for (final opt in AppConstants.speedOptions) {
@@ -56,6 +67,20 @@ class SettingsProvider extends ChangeNotifier {
     if (_speed == ms) return;
     _speed = ms;
     await _storage.setSpeed(ms);
+    notifyListeners();
+  }
+
+  Future<void> setLevel(LevelType level) async {
+    if (_level == level) return;
+    _level = level;
+    await _storage.setLevel(level);
+    notifyListeners();
+  }
+
+  Future<void> setSkin(SnakeSkin skin) async {
+    if (_skin == skin) return;
+    _skin = skin;
+    await _storage.setSkin(skin);
     notifyListeners();
   }
 

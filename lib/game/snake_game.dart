@@ -2,20 +2,28 @@ import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/game_state.dart';
 import '../models/power_up.dart';
+import '../models/skin.dart';
 import '../providers/game_provider.dart';
 import 'components/board_component.dart';
 import 'components/board_layer_component.dart';
 import 'components/death_flash_component.dart';
 import 'components/food_component.dart';
 import 'components/particle_burst_component.dart';
+import 'components/portal_component.dart';
 import 'components/score_popup_layer.dart';
 import 'components/snake_component.dart';
+import 'components/wall_component.dart';
+import 'input/board_input_component.dart';
 import 'power_up_style.dart';
+import 'skins/skin_sprites.dart';
+import 'skins/skin_style.dart';
 import 'snake_world.dart';
 
 const double _worldSize = 400;
@@ -25,13 +33,16 @@ const double _worldSize = 400;
 /// 棋盘、食物、蛇、粒子和飘字都放在 [World] 中，由固定分辨率的
 /// [CameraComponent] 统一缩放与做缩放/震动特效；游戏规则仍由
 /// [GameProvider] 持有。
-class SnakeGame extends FlameGame<SnakeWorld> {
+class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   SnakeGame({
     required this.provider,
     required this.surfaceColor,
     required this.snakeColor,
     required this.foodColor,
     required this.gridColor,
+    required this.wallColor,
+    required this.portalColor,
+    required this.skin,
   }) : super(
           world: SnakeWorld(),
           camera: CameraComponent.withFixedResolution(
@@ -49,17 +60,25 @@ class SnakeGame extends FlameGame<SnakeWorld> {
   final Color snakeColor;
   final Color foodColor;
   final Color gridColor;
+  final Color wallColor;
+  final Color portalColor;
+  final SnakeSkin skin;
 
   /// 开局倒计时：3、2、1、0（0 显示 GO）。
   final ValueNotifier<int> countdown = ValueNotifier<int>(0);
 
   late final BoardComponent _board;
+  late final WallComponent _walls;
+  late final PortalComponent _portals;
   late final FoodComponent _food;
   late final SnakeComponent _snake;
   late final ParticleBurstComponent _particles;
   late final DeathFlashComponent _flash;
   late final ScorePopupLayer _scorePopups;
+  late final BoardInputComponent _input;
   late final List<BoardLayerComponent> _layers;
+
+  SkinSprites _sprites = SkinSprites.empty;
 
   final math.Random _random = math.Random();
 
@@ -98,40 +117,108 @@ class SnakeGame extends FlameGame<SnakeWorld> {
   @override
   Color backgroundColor() => surfaceColor;
 
+  Color get _snakeTint => snakeSkinColor(skin) ?? snakeColor;
+
+  @override
+  KeyEventResult onKeyEvent(
+    KeyEvent event,
+    Set<LogicalKeyboardKey> keysPressed,
+  ) {
+    final isDown = event is KeyDownEvent;
+    final isRepeat = event is KeyRepeatEvent;
+    if (!isDown && !isRepeat) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+    Direction? direction;
+    if (key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.keyW) {
+      direction = Direction.up;
+    } else if (key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.keyS) {
+      direction = Direction.down;
+    } else if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.keyA) {
+      direction = Direction.left;
+    } else if (key == LogicalKeyboardKey.arrowRight ||
+        key == LogicalKeyboardKey.keyD) {
+      direction = Direction.right;
+    }
+    if (direction != null) {
+      provider.changeDirection(direction);
+      return KeyEventResult.handled;
+    }
+
+    if (isDown &&
+        (key == LogicalKeyboardKey.space ||
+            key == LogicalKeyboardKey.keyP ||
+            key == LogicalKeyboardKey.escape)) {
+      provider.togglePause();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   @override
   Future<void> onLoad() async {
+    final snakeTint = snakeSkinColor(skin) ?? snakeColor;
+    final foodTint = snakeSkinFoodColor(skin) ?? foodColor;
+    if (skin.usesSprites) {
+      _sprites = await SkinSprites.load(this, skin);
+    }
+
     _board = BoardComponent(
       provider: provider,
       backgroundColor: surfaceColor,
       gridColor: gridColor,
     );
+    _walls = WallComponent(
+      provider: provider,
+      color: wallColor,
+      priority: 1,
+    );
+    _portals = PortalComponent(
+      provider: provider,
+      color: portalColor,
+      priority: 2,
+    );
     _food = FoodComponent(
       provider: provider,
-      color: foodColor,
-      priority: 1,
+      color: foodTint,
+      skin: skin,
+      sprites: _sprites,
+      priority: 3,
     );
     _snake = SnakeComponent(
       provider: provider,
-      color: snakeColor,
-      priority: 2,
+      color: snakeTint,
+      skin: skin,
+      sprites: _sprites,
+      priority: 4,
     );
     _particles = ParticleBurstComponent(
       provider: provider,
-      color: foodColor,
-      priority: 3,
+      color: foodTint,
+      priority: 5,
     );
     _flash = DeathFlashComponent(
       provider: provider,
-      priority: 4,
+      priority: 6,
     );
-    _scorePopups = ScorePopupLayer(color: snakeColor);
+    _scorePopups = ScorePopupLayer(color: snakeTint);
+    _input = BoardInputComponent(provider: provider, priority: 100);
 
     _layers = <BoardLayerComponent>[
       _board,
+      _walls,
+      _portals,
       _food,
       _snake,
       _particles,
       _flash,
+      _input,
     ];
     _layoutBoard();
 
@@ -191,12 +278,18 @@ class SnakeGame extends FlameGame<SnakeWorld> {
       final oldFood = provider.state.food;
       final oldScore = provider.state.score;
       final hadShield = provider.hasShield;
+      final previousHead = provider.state.snake.head;
 
       _accumulator -= step;
       steps++;
       _snake.beginStep();
       provider.tick();
 
+      final newHead = provider.state.snake.head;
+      if ((newHead.x - previousHead.x).abs() > 1 ||
+          (newHead.y - previousHead.y).abs() > 1) {
+        _onPortalJump(previousHead, newHead);
+      }
       if (hadShield && !provider.hasShield && provider.isPlaying) {
         _onShieldBreak(provider.state.snake.head);
       }
@@ -327,7 +420,7 @@ class SnakeGame extends FlameGame<SnakeWorld> {
     _combo = _comboTimer > 0 ? _combo + 1 : 1;
     _comboTimer = _comboWindow;
     final type = food.type;
-    final pickupColor = type == null ? snakeColor : powerUpColor(type);
+    final pickupColor = type == null ? _snakeTint : powerUpColor(type);
     final baseLabel = type == null ? '+$gain' : '+$gain ${type.shortLabel}';
     final label = _combo > 1 ? '$baseLabel x$_combo' : baseLabel;
     final position = Vector2(
@@ -356,6 +449,11 @@ class SnakeGame extends FlameGame<SnakeWorld> {
       _worldCellSize * 1.2,
       color: color,
     );
+  }
+
+  void _onPortalJump(Point from, Point to) {
+    _particles.burst(from, color: portalColor);
+    _particles.burst(to, color: portalColor);
   }
 
   void _updateSlowMotion(double dt) {

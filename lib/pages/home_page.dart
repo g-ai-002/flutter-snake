@@ -17,6 +17,8 @@ class HomePage extends StatelessWidget {
     final darkMode = context.select<SettingsProvider, bool>((s) => s.darkMode);
     final boardSizeLabel = context.select<SettingsProvider, String>((s) => s.boardSizeLabel);
     final speedLabel = context.select<SettingsProvider, String>((s) => s.speedLabel);
+    final levelLabel = context.select<SettingsProvider, String>((s) => s.levelLabel);
+    final skinLabel = context.select<SettingsProvider, String>((s) => s.skinLabel);
     final settings = context.read<SettingsProvider>();
 
     return Scaffold(
@@ -93,6 +95,11 @@ class HomePage extends StatelessWidget {
                       ),
                 ),
                 const SizedBox(height: 8),
+                Text(
+                  '关卡: $levelLabel  |  皮肤: $skinLabel',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
                 Text(
                   '棋盘: $boardSizeLabel  |  速度: $speedLabel',
                   style: Theme.of(context).textTheme.bodySmall,

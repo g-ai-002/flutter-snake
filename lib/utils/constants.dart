@@ -9,6 +9,8 @@ class AppConstants {
   static const String prefKeyBoardSize = 'board_size';
   static const String prefKeySpeed = 'speed';
   static const String prefKeyMuted = 'muted';
+  static const String prefKeyLevel = 'level';
+  static const String prefKeySkin = 'skin';
 
   static const int defaultBoardWidth = 20;
   static const int defaultBoardHeight = 20;

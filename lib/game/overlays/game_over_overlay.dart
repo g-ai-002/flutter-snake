@@ -4,9 +4,16 @@ import '../../providers/game_provider.dart';
 
 /// 游戏结束结算遮罩。
 class GameOverOverlay extends StatelessWidget {
-  const GameOverOverlay({super.key, required this.provider});
+  const GameOverOverlay({
+    super.key,
+    required this.provider,
+    this.onRestart,
+  });
 
   final GameProvider provider;
+
+  /// 再来一局后的回调，用于把键盘焦点交还棋盘。
+  final VoidCallback? onRestart;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,7 @@ class GameOverOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
-                  onPressed: provider.start,
+                  onPressed: onRestart ?? provider.start,
                   icon: const Icon(Icons.replay),
                   label: const Text('再来一局'),
                   style: ElevatedButton.styleFrom(

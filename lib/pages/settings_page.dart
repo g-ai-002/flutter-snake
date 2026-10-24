@@ -2,6 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../game/level_style.dart';
+import '../game/skins/skin_style.dart';
+import '../models/level.dart';
+import '../models/skin.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/file_system_service.dart';
@@ -119,6 +123,41 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
               secondary: Icon(Icons.speed, color: colorScheme.primary),
+            );
+          }),
+          const Divider(),
+          // 关卡
+          const _SectionHeader(title: '关卡'),
+          ...LevelType.values.map((level) {
+            return RadioListTile<LevelType>(
+              title: Text(level.label),
+              subtitle: Text(level.description),
+              value: level,
+              groupValue: settings.level,
+              onChanged: (v) {
+                if (v != null) {
+                  settings.setLevel(v);
+                  game.updateLevel(v);
+                }
+              },
+              secondary: Icon(levelIcon(level), color: colorScheme.primary),
+            );
+          }),
+          const Divider(),
+          // 皮肤
+          const _SectionHeader(title: '皮肤'),
+          ...SnakeSkin.values.map((skin) {
+            return RadioListTile<SnakeSkin>(
+              title: Text(skin.label),
+              subtitle: Text(skin.description),
+              value: skin,
+              groupValue: settings.skin,
+              onChanged: (v) {
+                if (v != null) {
+                  settings.setSkin(v);
+                }
+              },
+              secondary: Icon(skinIcon(skin), color: colorScheme.primary),
             );
           }),
           const Divider(),

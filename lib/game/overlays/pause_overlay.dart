@@ -4,9 +4,16 @@ import '../../providers/game_provider.dart';
 
 /// 暂停时覆盖在棋盘上的半透明遮罩。
 class PauseOverlay extends StatelessWidget {
-  const PauseOverlay({super.key, required this.provider});
+  const PauseOverlay({
+    super.key,
+    required this.provider,
+    this.onResume,
+  });
 
   final GameProvider provider;
+
+  /// 继续游戏后的回调，用于把键盘焦点交还棋盘。
+  final VoidCallback? onResume;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +39,7 @@ class PauseOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: provider.togglePause,
+                onPressed: onResume ?? provider.togglePause,
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('继续'),
               ),

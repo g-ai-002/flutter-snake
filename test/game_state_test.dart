@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_snake/models/game_state.dart';
+import 'package:flutter_snake/models/level.dart';
 import 'package:flutter_snake/models/power_up.dart';
 
 void main() {
@@ -116,6 +117,9 @@ void main() {
       expect(state.boardWidth, 20);
       expect(state.boardHeight, 20);
       expect(state.speedMs, 200);
+      expect(state.level, LevelType.open);
+      expect(state.layout.walls, isEmpty);
+      expect(state.layout.portals, isEmpty);
     });
   });
 }

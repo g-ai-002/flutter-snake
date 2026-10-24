@@ -1,3 +1,4 @@
+import 'level.dart';
 import 'power_up.dart';
 
 enum Direction { up, down, left, right }
@@ -68,6 +69,8 @@ class GameState {
   final int boardWidth;
   final int boardHeight;
   final int speedMs;
+  final LevelType level;
+  final LevelLayout layout;
 
   GameState({
     required this.snake,
@@ -78,6 +81,8 @@ class GameState {
     this.boardWidth = 20,
     this.boardHeight = 20,
     this.speedMs = 200,
+    this.level = LevelType.open,
+    this.layout = LevelLayout.empty,
   });
 
   GameState copyWith({
@@ -89,6 +94,8 @@ class GameState {
     int? boardWidth,
     int? boardHeight,
     int? speedMs,
+    LevelType? level,
+    LevelLayout? layout,
   }) {
     return GameState(
       snake: snake ?? this.snake,
@@ -99,6 +106,8 @@ class GameState {
       boardWidth: boardWidth ?? this.boardWidth,
       boardHeight: boardHeight ?? this.boardHeight,
       speedMs: speedMs ?? this.speedMs,
+      level: level ?? this.level,
+      layout: layout ?? this.layout,
     );
   }
 }

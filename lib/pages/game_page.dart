@@ -1,7 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../game/overlays/countdown_overlay.dart';
@@ -13,7 +12,6 @@ import '../models/game_state.dart';
 import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
-import '../widgets/gesture_control.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -23,9 +21,8 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  final FocusNode _focusNode = FocusNode();
   final FocusNode _gameFocusNode = FocusNode(
-    canRequestFocus: false,
+    debugLabel: 'snake-game',
     skipTraversal: true,
   );
   SnakeGame? _game;
@@ -33,7 +30,10 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _gameFocusNode.requestFocus();
+    });
   }
 
   @override
@@ -43,6 +43,7 @@ class _GamePageState extends State<GamePage> {
 
     final provider = context.read<GameProvider>();
     final settings = context.read<SettingsProvider>();
+    provider.updateLevel(settings.level);
     provider.updateBoardSize(settings.boardSize);
     provider.updateSpeed(settings.speed);
 
@@ -53,34 +54,27 @@ class _GamePageState extends State<GamePage> {
       snakeColor: colors.primary,
       foodColor: colors.error,
       gridColor: colors.outline.withValues(alpha: 0.3),
+      wallColor: colors.outline,
+      portalColor: colors.tertiary,
+      skin: settings.skin,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       provider.start();
+      _gameFocusNode.requestFocus();
     });
   }
 
   @override
   void dispose() {
-    _focusNode.dispose();
     _gameFocusNode.dispose();
     super.dispose();
   }
 
-  void _onKey(KeyEvent event) {
-    if (event is! KeyDownEvent) return;
-    final game = context.read<GameProvider>();
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      game.changeDirection(Direction.up);
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      game.changeDirection(Direction.down);
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      game.changeDirection(Direction.left);
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      game.changeDirection(Direction.right);
-    } else if (event.logicalKey == LogicalKeyboardKey.space) {
-      game.togglePause();
+  void _focusGame() {
+    if (!_gameFocusNode.hasFocus) {
+      _gameFocusNode.requestFocus();
     }
   }
 
@@ -94,12 +88,8 @@ class _GamePageState extends State<GamePage> {
     }
     final state = provider.state;
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: Scaffold(
-        appBar: AppBar(
+    return Scaffold(
+      appBar: AppBar(
           title: Consumer<GameProvider>(
             builder: (context, game, _) => Text('得分: ${game.state.score}'),
           ),
@@ -131,8 +121,11 @@ class _GamePageState extends State<GamePage> {
                 child: Consumer<GameProvider>(
                   builder: (context, game, _) {
                     final state = game.state;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    return Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '最高分: ${state.highScore}',
@@ -140,6 +133,13 @@ class _GamePageState extends State<GamePage> {
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.secondary,
                                     fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        Text(
+                          '关卡: ${game.level.label}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                         ),
                         if (state.status == GameStatus.over)
@@ -163,8 +163,8 @@ class _GamePageState extends State<GamePage> {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: GestureControl(
-                        onDirection: provider.changeDirection,
+                      child: Listener(
+                        onPointerDown: (_) => _focusGame(),
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -175,11 +175,15 @@ class _GamePageState extends State<GamePage> {
                                 child: GameWidget<SnakeGame>(
                                   game: game,
                                   focusNode: _gameFocusNode,
-                                  autofocus: false,
+                                  autofocus: true,
                                   overlayBuilderMap: {
                                     SnakeGame.pauseOverlayId:
                                         (_, SnakeGame game) => PauseOverlay(
                                               provider: game.provider,
+                                              onResume: () {
+                                                game.provider.togglePause();
+                                                _gameFocusNode.requestFocus();
+                                              },
                                             ),
                                     SnakeGame.countdownOverlayId:
                                         (_, SnakeGame game) => CountdownOverlay(
@@ -188,6 +192,10 @@ class _GamePageState extends State<GamePage> {
                                     SnakeGame.gameOverOverlayId:
                                         (_, SnakeGame game) => GameOverOverlay(
                                               provider: game.provider,
+                                              onRestart: () {
+                                                game.provider.start();
+                                                _gameFocusNode.requestFocus();
+                                              },
                                             ),
                                   },
                                 ),
@@ -239,7 +247,7 @@ class _GamePageState extends State<GamePage> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             defaultTargetPlatform == TargetPlatform.windows
-                                ? '方向键 / 点击或滑动棋盘控制方向'
+                                ? '方向键 / WASD 转向 · 空格暂停'
                                 : '点击或滑动棋盘控制方向',
                             textAlign: TextAlign.center,
                             style:
@@ -270,7 +278,6 @@ class _GamePageState extends State<GamePage> {
             ],
           ),
         ),
-      ),
     );
   }
 }

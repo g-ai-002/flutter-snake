@@ -1,21 +1,32 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../../models/game_state.dart';
+import '../../models/skin.dart';
 import '../power_up_style.dart';
+import '../skins/skin_sprites.dart';
+import '../skins/skin_style.dart';
 import 'board_layer_component.dart';
 
 /// 蛇身与蛇头（含朝向眼睛）。
 ///
 /// 逻辑层仍按格推进；渲染时用上一格位置与当前格位置做线性插值，
-/// 让蛇在两次 tick 之间平滑滑动，而不是整格跳动。
+/// 让蛇在两次 tick 之间平滑滑动。贴图皮肤使用 16×16 精灵，
+/// 矢量皮肤沿用圆角方块，霓虹皮肤额外叠加发光描边。
 class SnakeComponent extends BoardLayerComponent {
   SnakeComponent({
     required super.provider,
     required this.color,
+    required this.skin,
+    required this.sprites,
     super.priority,
   });
 
   final Color color;
+  final SnakeSkin skin;
+  final SkinSprites sprites;
 
   final Paint _bodyPaint = Paint()..style = PaintingStyle.fill;
   final Paint _eyePaint = Paint()..color = Colors.white;
@@ -26,9 +37,15 @@ class SnakeComponent extends BoardLayerComponent {
     ..strokeWidth = 1.4
     ..strokeCap = StrokeCap.round;
   final Paint _auraPaint = Paint();
+  final Paint _glowPaint = Paint();
+  final Paint _spritePaint = Paint()
+    ..filterQuality = FilterQuality.none
+    ..isAntiAlias = false;
 
   List<Point> _previousBody = const [];
   double _progress = 1;
+
+  bool get _useSprites => skin.usesSprites && sprites.isReady;
 
   /// 新一局开始时直接对齐当前身体，避免从上一局位置滑过来。
   void snapToCurrent() {
@@ -64,28 +81,150 @@ class SnakeComponent extends BoardLayerComponent {
       final isHead = i == body.length - 1;
       final alpha = 0.4 + (0.6 * i / body.length);
 
-      _bodyPaint.color = color.withValues(alpha: alpha);
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          topLeft.dx + 1,
-          topLeft.dy + 1,
-          cellSize - 2,
-          cellSize - 2,
-        ),
-        Radius.circular(isHead ? 6 : 3),
-      );
-      canvas.drawRRect(rect, _bodyPaint);
+      if (_useSprites) {
+        _drawSpriteSegment(canvas, body, i, topLeft, alpha);
+      } else {
+        _drawVectorSegment(canvas, topLeft, isHead, alpha);
+      }
     }
 
     final headSource =
         _sourcePoint(from, body.length - 1, body.last, grew: grew);
     final headCenter = _interpolatedCenter(headSource, body.last, t);
     if (provider.state.status == GameStatus.over) {
-      _drawDeadEyes(canvas, headCenter);
-    } else {
+      if (_useSprites) {
+        _drawSpriteDeadEyes(canvas, headCenter);
+      } else {
+        _drawDeadEyes(canvas, headCenter);
+      }
+    } else if (!_useSprites) {
       _drawEyes(canvas, headCenter);
     }
     _drawAuras(canvas, headCenter);
+  }
+
+  void _drawVectorSegment(
+    Canvas canvas,
+    Offset topLeft,
+    bool isHead,
+    double alpha,
+  ) {
+    final radius = skin == SnakeSkin.pixel
+        ? cellSize * 0.12
+        : (isHead ? 6.0 : 3.0);
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        topLeft.dx + 1,
+        topLeft.dy + 1,
+        cellSize - 2,
+        cellSize - 2,
+      ),
+      Radius.circular(radius),
+    );
+
+    if (skinUsesNeonGlow(skin)) {
+      _glowPaint
+        ..color = color.withValues(alpha: alpha * 0.45)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, cellSize * 0.32);
+      canvas.drawRRect(rect, _glowPaint);
+    }
+
+    _bodyPaint.color = color.withValues(alpha: alpha);
+    canvas.drawRRect(rect, _bodyPaint);
+  }
+
+  void _drawSpriteSegment(
+    Canvas canvas,
+    List<Point> body,
+    int index,
+    Offset topLeft,
+    double alpha,
+  ) {
+    final isHead = index == body.length - 1;
+    final isTail = index == 0;
+    final image = isHead
+        ? sprites.head
+        : (isTail ? sprites.tail ?? sprites.body : sprites.body);
+    if (image == null) {
+      _drawVectorSegment(canvas, topLeft, isHead, alpha);
+      return;
+    }
+
+    _drawSprite(
+      canvas,
+      image,
+      topLeft,
+      angle: isHead ? _angleForDirection(provider.state.snake.direction) : null,
+      alpha: alpha.clamp(0.6, 1.0).toDouble(),
+    );
+  }
+
+  void _drawSprite(
+    Canvas canvas,
+    ui.Image image,
+    Offset topLeft, {
+    double? angle,
+    required double alpha,
+  }) {
+    final inset = cellSize * 0.04;
+    final target = Rect.fromLTWH(
+      topLeft.dx + inset,
+      topLeft.dy + inset,
+      cellSize - inset * 2,
+      cellSize - inset * 2,
+    );
+    final source = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    _spritePaint.color = Colors.white.withValues(alpha: alpha);
+
+    if (angle == null || angle == 0) {
+      canvas.drawImageRect(image, source, target, _spritePaint);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(target.center.dx, target.center.dy);
+    canvas.rotate(angle);
+    canvas.drawImageRect(
+      image,
+      source,
+      Rect.fromCenter(
+        center: Offset.zero,
+        width: target.width,
+        height: target.height,
+      ),
+      _spritePaint,
+    );
+    canvas.restore();
+  }
+
+  void _drawSpriteDeadEyes(Canvas canvas, Offset center) {
+    final eyeRadius = cellSize * 0.1;
+    final offsets = _eyeOffsets(provider.state.snake.direction);
+    final leftEye = center + Offset(offsets[0], offsets[1]);
+    final rightEye = center + Offset(offsets[2], offsets[3]);
+
+    canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
+    canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
+    _drawCross(canvas, leftEye, eyeRadius * 0.5);
+    _drawCross(canvas, rightEye, eyeRadius * 0.5);
+  }
+
+  double _angleForDirection(Direction direction) {
+    switch (direction) {
+      case Direction.right:
+        return 0;
+      case Direction.down:
+        return math.pi / 2;
+      case Direction.left:
+        return math.pi;
+      case Direction.up:
+        return -math.pi / 2;
+    }
   }
 
   Point _sourcePoint(
@@ -112,9 +251,16 @@ class SnakeComponent extends BoardLayerComponent {
   }
 
   Offset _interpolatedTopLeft(Point from, Point to, double t) {
-    final x = from.x + (to.x - from.x) * t;
-    final y = from.y + (to.y - from.y) * t;
-    return Offset(x * cellSize, y * cellSize);
+    final dx = to.x - from.x;
+    final dy = to.y - from.y;
+    // 传送门会让蛇头跨越大半个棋盘，直接吸附到出口，避免拉出长条。
+    if (dx.abs() > 1 || dy.abs() > 1) {
+      return Offset(to.x * cellSize, to.y * cellSize);
+    }
+    return Offset(
+      (from.x + dx * t) * cellSize,
+      (from.y + dy * t) * cellSize,
+    );
   }
 
   Offset _interpolatedCenter(Point from, Point to, double t) {
