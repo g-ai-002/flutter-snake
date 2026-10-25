@@ -10,6 +10,7 @@ import '../models/game_state.dart';
 import '../models/power_up.dart';
 import '../models/skin.dart';
 import '../providers/game_provider.dart';
+import 'board_camera.dart';
 import 'components/board_component.dart';
 import 'components/board_layer_component.dart';
 import 'components/death_flash_component.dart';
@@ -19,7 +20,8 @@ import 'components/portal_component.dart';
 import 'components/score_popup_layer.dart';
 import 'components/snake_component.dart';
 import 'components/wall_component.dart';
-import 'input/board_input_component.dart';
+import 'input/canvas_gesture_layer.dart';
+import 'input/direction_input.dart';
 import 'power_up_style.dart';
 import 'skins/skin_sprites.dart';
 import 'skins/skin_style.dart';
@@ -29,9 +31,9 @@ const double _worldSize = 400;
 
 /// 基于 Flame 的贪吃蛇游戏。
 ///
-/// 棋盘、食物、蛇、粒子和飘字都放在 [World] 中，由固定分辨率的
-/// [CameraComponent] 统一缩放与做缩放/震动特效；游戏规则仍由
-/// [GameProvider] 持有。
+/// 棋盘、食物、蛇、粒子和飘字都放在 [World] 中，相机把 400×400 的世界棋盘
+/// 对齐到 Flutter 侧给出的棋盘槽位；画布铺满整个游戏页，棋盘以外的区域由
+/// 悬浮的 Flutter HUD 覆盖。游戏规则仍由 [GameProvider] 持有。
 class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   SnakeGame({
     required this.provider,
@@ -44,10 +46,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     required this.skin,
   }) : super(
           world: SnakeWorld(),
-          camera: CameraComponent.withFixedResolution(
-            width: _worldSize,
-            height: _worldSize,
-          ),
+          camera: CameraComponent(),
         );
 
   static const String pauseOverlayId = 'pause';
@@ -74,7 +73,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   late final ParticleBurstComponent _particles;
   late final DeathFlashComponent _flash;
   late final ScorePopupLayer _scorePopups;
-  late final BoardInputComponent _input;
+  late final CanvasGestureLayer _gestures;
   late final List<BoardLayerComponent> _layers;
 
   SkinSprites _sprites = SkinSprites.empty;
@@ -82,6 +81,9 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   final math.Random _random = math.Random();
 
   Vector2 _cameraBase = Vector2(_worldSize / 2, _worldSize / 2);
+  Size _canvasSize = Size.zero;
+  Rect _boardRect = Rect.zero;
+  double _baseZoom = 1;
   double _worldCellSize = 0;
 
   bool _ready = false;
@@ -207,7 +209,6 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       priority: 6,
     );
     _scorePopups = ScorePopupLayer(color: snakeTint);
-    _input = BoardInputComponent(provider: provider, priority: 100);
 
     _layers = <BoardLayerComponent>[
       _board,
@@ -217,17 +218,83 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       _snake,
       _particles,
       _flash,
-      _input,
     ];
     _layoutBoard();
 
     await world.addAll(<Component>[..._layers, _scorePopups]);
 
-    _cameraBase = Vector2(_worldSize / 2, _worldSize / 2);
-    camera.viewfinder.position = _cameraBase;
-    camera.viewfinder.zoom = 1;
+    _gestures = CanvasGestureLayer(
+      onTap: handleTap,
+      onSwipe: handleSwipe,
+    );
+    camera.viewport.add(_gestures);
+
+    _canvasSize = Size(size.x, size.y);
+    _applyCamera();
     _ready = true;
     _snake.snapToCurrent();
+  }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    _canvasSize = Size(size.x, size.y);
+    _applyCamera();
+  }
+
+  /// Flutter 侧把棋盘槽位的页面矩形同步过来，相机据此把世界棋盘画在槽位里。
+  void updateBoardLayout({required Rect boardRect, required Size canvasSize}) {
+    if (_boardRect == boardRect && _canvasSize == canvasSize) {
+      return;
+    }
+    _boardRect = boardRect;
+    _canvasSize = canvasSize;
+    _applyCamera();
+  }
+
+  /// 点击画布任意位置：按点击点相对棋盘中心的方向转向。
+  void handleTap(Offset position) {
+    if (_boardRect.isEmpty) {
+      return;
+    }
+    final direction = directionFromTap(
+      position - _boardRect.topLeft,
+      _boardRect.size,
+    );
+    if (direction != null) {
+      provider.changeDirection(direction);
+    }
+  }
+
+  /// 画布上的滑动：按位移方向转向。
+  void handleSwipe(Offset delta) {
+    if (delta.distance < swipeThreshold) {
+      return;
+    }
+    provider.changeDirection(directionFromDelta(delta));
+  }
+
+  void _applyCamera() {
+    if (_boardRect.isEmpty || _canvasSize.isEmpty) {
+      return;
+    }
+    final layout = _layoutFor();
+    _baseZoom = layout.zoom;
+    _cameraBase = layout.position;
+    camera.viewfinder.zoom = _baseZoom;
+    camera.viewfinder.position = _cameraBase;
+  }
+
+  BoardCameraLayout _layoutFor([double? zoom]) {
+    if (_boardRect.isEmpty || _canvasSize.isEmpty) {
+      return BoardCameraLayout(zoom: _baseZoom, position: _cameraBase.clone());
+    }
+    return cameraLayoutForBoard(
+      canvasSize: _canvasSize,
+      boardRect: _boardRect,
+      worldBoardRect: const Rect.fromLTWH(0, 0, _worldSize, _worldSize),
+      zoom: zoom,
+    );
   }
 
   @override
@@ -355,9 +422,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _zoomStrength = 0.025;
     _slowMotionRemaining = 0;
     world.timeScale = 1.0;
-    _cameraBase = Vector2(_worldSize / 2, _worldSize / 2);
-    camera.viewfinder.position = _cameraBase;
-    camera.viewfinder.zoom = 1;
+    _applyCamera();
     _snake.snapToCurrent();
     _combo = 1;
     _comboTimer = 0;
@@ -469,18 +534,21 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   void _updateCamera(double dt) {
     _zoomPulse = math.max(0.0, _zoomPulse - dt / _zoomDuration);
     final eased = 1 - (1 - _zoomPulse) * (1 - _zoomPulse);
-    camera.viewfinder.zoom = 1 + _zoomStrength * eased;
+    final zoom = _baseZoom * (1 + _zoomStrength * eased);
+    final base = _layoutFor(zoom).position;
+    _cameraBase = base;
+    camera.viewfinder.zoom = zoom;
 
     if (_shakeRemaining > 0) {
       _shakeRemaining = math.max(0.0, _shakeRemaining - dt);
       final strength =
           _worldSize * 0.012 * (_shakeRemaining / _shakeDuration);
       camera.viewfinder.position = Vector2(
-        _cameraBase.x + (_random.nextDouble() * 2 - 1) * strength,
-        _cameraBase.y + (_random.nextDouble() * 2 - 1) * strength,
+        base.x + (_random.nextDouble() * 2 - 1) * strength,
+        base.y + (_random.nextDouble() * 2 - 1) * strength,
       );
     } else {
-      camera.viewfinder.position = _cameraBase;
+      camera.viewfinder.position = base;
     }
   }
 
