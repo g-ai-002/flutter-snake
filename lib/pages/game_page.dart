@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,15 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
+  /// 棋盘与页面边缘、HUD 之间的留白。
+  static const double _boardMargin = 12;
+
+  /// 竖屏时上下留给 HUD 的高度，保证棋盘严格居中后仍有位置摆信息与提示。
+  static const double _portraitReserve = 84;
+
+  /// 横屏时左右留给 HUD 的宽度。
+  static const double _landscapeReserve = 160;
+
   final GlobalKey _pageKey = GlobalKey();
   final FocusNode _gameFocusNode = FocusNode(
     debugLabel: 'snake-game',
@@ -89,15 +100,26 @@ class _GamePageState extends State<GamePage> {
     game.updateBoardLayout(boardRect: rect, canvasSize: pageBox.size);
   }
 
+  /// 居中的正方形棋盘边长：横屏把 HUD 放到左右，竖屏放上下。
+  double _boardSide(Size size, bool landscape) {
+    final maxSide = landscape
+        ? math.min(
+            size.height - _boardMargin * 2,
+            size.width - _landscapeReserve * 2,
+          )
+        : math.min(
+            size.width - _boardMargin * 2,
+            size.height - _portraitReserve * 2,
+          );
+    return math.max(0, maxSide);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final provider = context.read<GameProvider>();
     final game = _game;
     if (game == null) {
       return const SizedBox.shrink();
     }
-    final state = provider.state;
 
     return Scaffold(
       appBar: AppBar(
@@ -157,159 +179,183 @@ class _GamePageState extends State<GamePage> {
             ),
             // HUD 悬浮在画布之上；不接收点击的区域放行给 Flame 手势。
             SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  IgnorePointer(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Consumer<GameProvider>(
-                        builder: (context, game, _) {
-                          final state = game.state;
-                          return Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 12,
-                            runSpacing: 4,
-                            children: [
-                              Text(
-                                '最高分: ${state.highScore}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: colorScheme.secondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                              Text(
-                                '关卡: ${game.level.label}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              if (state.status == GameStatus.over)
-                                Text(
-                                  '游戏结束',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: colorScheme.error,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                            ],
-                          );
-                        },
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final size = constraints.biggest;
+                  final landscape = size.width > size.height;
+                  final side = _boardSide(size, landscape);
+                  final boardLeft = (size.width - side) / 2;
+                  final boardTop = (size.height - side) / 2;
+                  return Stack(
+                    children: [
+                      Positioned.fromRect(
+                        rect: Rect.fromLTWH(boardLeft, boardTop, side, side),
+                        child: _BoardSlot(
+                          pageKey: _pageKey,
+                          onRect: _handleBoardRect,
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Center(
-                              child: AspectRatio(
-                                aspectRatio:
-                                    state.boardWidth / state.boardHeight,
-                                child: _BoardSlot(
-                                  pageKey: _pageKey,
-                                  onRect: _handleBoardRect,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            right: 8,
+                      // 道具效果贴住棋盘上沿。
+                      Positioned(
+                        top: boardTop + 8,
+                        left: boardLeft + 8,
+                        width: math.max(0, side - 16),
+                        child: IgnorePointer(child: _buildEffects()),
+                      ),
+                      if (!landscape) ...[
+                        Positioned(
+                          top: math.max(4, boardTop - 40),
+                          left: 16,
+                          right: 16,
+                          child: IgnorePointer(child: _buildStatus()),
+                        ),
+                        Positioned(
+                          top: boardTop + side + 12,
+                          left: 16,
+                          right: 16,
+                          child: _buildHint(),
+                        ),
+                      ] else ...[
+                        Positioned(
+                          left: 12,
+                          top: 0,
+                          bottom: 0,
+                          width: math.max(0, boardLeft - 24),
+                          child: Align(
+                            alignment: Alignment.centerRight,
                             child: IgnorePointer(
-                              child: Consumer<GameProvider>(
-                                builder: (context, game, _) {
-                                  final effects = game.activeEffects;
-                                  if (effects.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Align(
-                                    alignment: Alignment.topCenter,
-                                    child: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 6,
-                                      alignment: WrapAlignment.center,
-                                      children: effects
-                                          .map((effect) =>
-                                              _EffectChip(effect: effect))
-                                          .toList(),
-                                    ),
-                                  );
-                                },
-                              ),
+                              child: _buildStatus(vertical: true),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 60,
-                    child: Consumer<GameProvider>(
-                      builder: (context, game, _) {
-                        final status = game.state.status;
-                        if (status == GameStatus.playing ||
-                            status == GameStatus.paused) {
-                          return IgnorePointer(
-                            child: Center(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  defaultTargetPlatform ==
-                                          TargetPlatform.windows
-                                      ? '方向键 / WASD 转向 · 空格暂停'
-                                      : '点击或滑动屏幕任意位置控制方向',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                        if (status == GameStatus.idle) {
-                          return Center(
-                            child: ElevatedButton.icon(
-                              onPressed: game.start,
-                              icon: const Icon(Icons.replay),
-                              label: const Text('重新开始'),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(180, 44),
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                        ),
+                        Positioned(
+                          right: 12,
+                          top: 0,
+                          bottom: 0,
+                          width: math.max(
+                            0,
+                            size.width - boardLeft - side - 24,
+                          ),
+                          child: Center(child: _buildHint()),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatus({bool vertical = false}) {
+    return Consumer<GameProvider>(
+      builder: (context, game, _) {
+        final state = game.state;
+        final colorScheme = Theme.of(context).colorScheme;
+        final items = <Widget>[
+          Text(
+            '最高分: ${state.highScore}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          Text(
+            '关卡: ${game.level.label}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+          if (state.status == GameStatus.over)
+            Text(
+              '游戏结束',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+        ];
+        if (vertical) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final item in items)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: item,
+                ),
+            ],
+          );
+        }
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 4,
+          children: items,
+        );
+      },
+    );
+  }
+
+  Widget _buildHint() {
+    return Consumer<GameProvider>(
+      builder: (context, game, _) {
+        final status = game.state.status;
+        if (status == GameStatus.playing || status == GameStatus.paused) {
+          return SizedBox(
+            height: 60,
+            child: Center(
+              child: IgnorePointer(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    defaultTargetPlatform == TargetPlatform.windows
+                        ? '方向键 / WASD 转向 · 空格暂停'
+                        : '点击或滑动屏幕任意位置控制方向',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        if (status == GameStatus.idle) {
+          return ElevatedButton.icon(
+            onPressed: game.start,
+            icon: const Icon(Icons.replay),
+            label: const Text('重新开始'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(180, 44),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildEffects() {
+    return Consumer<GameProvider>(
+      builder: (context, game, _) {
+        final effects = game.activeEffects;
+        if (effects.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          alignment: WrapAlignment.center,
+          children: effects.map((effect) => _EffectChip(effect: effect)).toList(),
+        );
+      },
     );
   }
 }

@@ -174,6 +174,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       provider: provider,
       backgroundColor: surfaceColor,
       gridColor: gridColor,
+      borderColor: wallColor,
     );
     _walls = WallComponent(
       provider: provider,
