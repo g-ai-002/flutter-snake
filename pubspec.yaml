@@ -1,8 +1,7 @@
 name: flutter_snake
 description: 经典贪吃蛇游戏 - 支持 Android 和 Windows 双平台
 publish_to: 'none'
-version: 0.9.0
-
+version: 0.10.0
 environment:
   sdk: '>=3.13.5 <4.0.0'
 
