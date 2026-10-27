@@ -34,16 +34,16 @@
 
 ## 下载
 
-### v0.9.0（当前版本）
+### v0.10.0（当前版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0)
 - [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/debug/)（首次需手动运行一次
   `Build & Release` 工作流；之后每个 `v*` tag 会生成独立的 `v<版本>/` 目录）
 
 ### 历史版本
 
-- [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
+- [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0) | [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1)
 - [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
@@ -85,7 +85,7 @@ flutter create --platforms=web --project-name flutter_snake .
 flutter run -d chrome
 ```
 
-发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.9.0/`、`v0.8.0/` …），
+发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.10.0/`、`v0.8.0/` …），
 非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
 
 ### 发布
@@ -94,8 +94,8 @@ flutter run -d chrome
 Windows ZIP，并在对应平台自动创建 Release：
 
 ```bash
-git tag v0.9.0
-git push origin v0.9.0
+git tag v0.10.0
+git push origin v0.10.0
 ```
 
 构建产物的版本号取自 `pubspec.yaml` 的 `version` 字段，标签版本号优先；应用内展示的版本号
