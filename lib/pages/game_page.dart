@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flame/game.dart';
@@ -15,6 +16,7 @@ import '../models/level.dart';
 import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
+import '../utils/game_hints.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -39,6 +41,8 @@ class _GamePageState extends State<GamePage> {
     skipTraversal: true,
   );
   SnakeGame? _game;
+  Timer? _hintTimer;
+  bool _showHint = false;
 
   @override
   void initState() {
@@ -75,12 +79,27 @@ class _GamePageState extends State<GamePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       provider.start();
+      _showHintFor(const Duration(seconds: 6));
       _gameFocusNode.requestFocus();
+    });
+  }
+
+  /// 只在进入新一局时短暂展示玩法提示。
+  void _showHintFor(Duration duration) {
+    _hintTimer?.cancel();
+    if (mounted) {
+      setState(() => _showHint = true);
+    }
+    _hintTimer = Timer(duration, () {
+      if (!mounted) return;
+      setState(() => _showHint = false);
     });
   }
 
   @override
   void dispose() {
+    _hintTimer?.cancel();
+    _game?.detachProvider();
     _gameFocusNode.dispose();
     super.dispose();
   }
@@ -306,6 +325,9 @@ class _GamePageState extends State<GamePage> {
     return Consumer<GameProvider>(
       builder: (context, game, _) {
         final status = game.state.status;
+        if (status == GameStatus.playing && !_showHint) {
+          return const SizedBox.shrink();
+        }
         if (status == GameStatus.playing || status == GameStatus.paused) {
           return SizedBox(
             height: 60,
@@ -314,9 +336,7 @@ class _GamePageState extends State<GamePage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    defaultTargetPlatform == TargetPlatform.windows
-                        ? '方向键 / WASD 转向 · 空格暂停'
-                        : '点击或滑动屏幕任意位置控制方向',
+                    GameHints.inGame,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,

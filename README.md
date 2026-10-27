@@ -1,6 +1,6 @@
 # 贪吃蛇 🐍
 
-经典贪吃蛇游戏，基于 Flutter + Flame 引擎开发，支持 Android 和 Windows 双平台。
+经典贪吃蛇游戏，基于 Flutter + Flame 引擎开发，支持 Android、Windows 与 Web 三平台。
 
 ## 功能
 
@@ -38,6 +38,8 @@
 
 - [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
 - [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
+- [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/debug/)（首次需手动运行一次
+  `Build & Release` 工作流；之后每个 `v*` tag 会生成独立的 `v<版本>/` 目录）
 
 ### 历史版本
 
@@ -74,6 +76,18 @@ flutter test
 python .build/generate_sprites.py
 ```
 
+### Web
+
+Web 平台由 CI 在构建时生成 `web/` 平台文件；本地预览前先执行：
+
+```bash
+flutter create --platforms=web --project-name flutter_snake .
+flutter run -d chrome
+```
+
+发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.9.0/`、`v0.8.0/` …），
+非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
+
 ### 发布
 
 推送 `v*` 标签会触发 GitHub Actions 与 Gitea Actions 双流水线，分别构建 Android APK 与
@@ -96,6 +110,7 @@ git push origin v0.9.0
 - SharedPreferences 持久化
 - audioplayers 音效播放
 - window_manager 桌面窗口管理
+- Web：GitHub Pages 多版本在线试玩
 
 ## 许可证
 

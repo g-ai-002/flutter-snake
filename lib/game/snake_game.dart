@@ -234,6 +234,27 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _applyCamera();
     _ready = true;
     _snake.snapToCurrent();
+    provider.addListener(_handleProviderChange);
+  }
+
+  @override
+  void onRemove() {
+    detachProvider();
+    super.onRemove();
+  }
+
+  /// 断开对 provider 的监听；GameWidget 销毁时显式调用一次。
+  void detachProvider() {
+    provider.removeListener(_handleProviderChange);
+  }
+
+  /// 暂停后主循环已停，必须靠 provider 通知才能收到「继续」并重启。
+  void _handleProviderChange() {
+    if (!_ready) return;
+    if (provider.state.status == GameStatus.playing) {
+      resumeEngine();
+    }
+    _handleStatusChange(provider.state.status);
   }
 
   @override
@@ -385,10 +406,13 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
 
     if (status == GameStatus.paused) {
       overlays.add(pauseOverlayId, priority: 20);
+      // 暂停后画面完全静止，停掉主循环省下每帧的整屏重绘。
+      pauseEngine();
       return;
     }
 
     overlays.remove(pauseOverlayId);
+    resumeEngine();
 
     if (status == GameStatus.playing) {
       if (previous == GameStatus.idle || previous == GameStatus.over) {
