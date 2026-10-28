@@ -50,7 +50,7 @@
 
 ### 环境要求
 
-- Flutter 3.47.7+（内置 Dart 3.13.5+）
+- Flutter 3.47.8+（内置 Dart 3.13.7+）
 - Android SDK 37+（编译 SDK；最低支持 Android 15，仅覆盖最新 3 个 Android 大版本）
 - Windows 10+
 
@@ -103,7 +103,7 @@ git push origin v0.10.0
 
 ## 技术栈
 
-- Flutter 3.47.7
+- Flutter 3.47.8
 - Flame 1.38.2（棋盘渲染与游戏主循环）
 - Provider 状态管理
 - Material 3 设计
