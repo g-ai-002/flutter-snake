@@ -309,7 +309,10 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     provider.updateEffects(dt);
-    _feedback.tickCombo(dt);
+    provider.tickTime(dt);
+    if (!provider.isPlaying) {
+      return;
+    }
 
     final step = provider.effectiveSpeedMs / 1000;
     if (step <= 0) {
@@ -387,7 +390,11 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     if (status == GameStatus.over) {
-      _triggerDeath();
+      if (provider.state.overReason == GameOverReason.timeout) {
+        _onTimeUp();
+      } else {
+        _triggerDeath();
+      }
       return;
     }
 
@@ -432,8 +439,19 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _gameOverOverlayTimer = _gameOverOverlayDelay;
   }
 
+  /// 限时挑战时间耗尽：不播死亡闪屏与慢动作，只做一次相机脉冲。
+  void _onTimeUp() {
+    _countdown.stop();
+    overlays.remove(countdownOverlayId);
+    _accumulator = 0;
+    _snake.snapToCurrent();
+    _camera.pulse();
+    _gameOverOverlayPending = true;
+    _gameOverOverlayTimer = _gameOverOverlayDelay;
+  }
+
   void _onEat(Food food, int gain) {
-    final combo = _feedback.registerEat();
+    final combo = provider.combo;
     final type = food.type;
     final pickupColor = type == null ? _snakeTint : powerUpColor(type);
     final baseLabel = type == null ? '+$gain' : '+$gain ${type.shortLabel}';

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../game/power_up_style.dart';
+import '../../models/game_mode.dart';
 import '../../models/game_state.dart';
 import '../../models/level.dart';
 import '../../models/power_up.dart';
@@ -140,6 +141,7 @@ class _StatusLine extends StatelessWidget {
     final game = context.watch<GameProvider>();
     final state = game.state;
     final colorScheme = Theme.of(context).colorScheme;
+    final remaining = game.remainingSeconds;
     final items = <Widget>[
       Text(
         '最高分: ${state.highScore}',
@@ -149,14 +151,36 @@ class _StatusLine extends StatelessWidget {
             ),
       ),
       Text(
+        '模式: ${game.mode.label}',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+      ),
+      Text(
         '关卡: ${game.level.label}',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
       ),
+      if (remaining != null)
+        Text(
+          '剩余: ${remaining.ceil()}s',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: remaining <= 10 ? colorScheme.error : colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      if (game.combo > 1)
+        Text(
+          '连击 x${game.combo}',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.tertiary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
       if (state.status == GameStatus.over)
         Text(
-          '游戏结束',
+          state.overReason.label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.error,
                 fontWeight: FontWeight.w600,

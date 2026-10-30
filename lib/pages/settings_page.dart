@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../game/level_style.dart';
+import '../game/mode_style.dart';
 import '../game/skins/skin_style.dart';
+import '../models/game_mode.dart';
 import '../models/level.dart';
 import '../models/skin.dart';
 import '../providers/game_provider.dart';
@@ -122,6 +124,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
               secondary: Icon(Icons.speed, color: colorScheme.primary),
+            );
+          }),
+          const Divider(),
+          // 玩法模式
+          const _SectionHeader(title: '玩法模式'),
+          ...GameMode.values.map((mode) {
+            return RadioListTile<GameMode>(
+              title: Text(mode.label),
+              subtitle: Text(mode.description),
+              value: mode,
+              groupValue: settings.mode,
+              onChanged: (v) {
+                if (v != null) {
+                  settings.setMode(v);
+                  game.updateMode(v);
+                }
+              },
+              secondary: Icon(modeIcon(mode), color: colorScheme.primary),
             );
           }),
           const Divider(),

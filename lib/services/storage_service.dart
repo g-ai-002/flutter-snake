@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/game_mode.dart';
 import '../models/level.dart';
 import '../models/skin.dart';
 import '../utils/constants.dart';
@@ -89,5 +90,15 @@ class StorageService {
 
   Future<void> setSkin(SnakeSkin v) => _write(
         (p) => p.setString(AppConstants.prefKeySkin, v.name),
+      );
+
+  GameMode get mode => _enumValue(
+        GameMode.values,
+        AppConstants.prefKeyMode,
+        GameMode.classic,
+      );
+
+  Future<void> setMode(GameMode v) => _write(
+        (p) => p.setString(AppConstants.prefKeyMode, v.name),
       );
 }

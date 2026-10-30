@@ -2,43 +2,55 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../game/combo_tracker.dart';
 import '../game/food_spawner.dart';
 import '../game/power_up_manager.dart';
+import '../models/achievement.dart';
+import '../models/game_mode.dart';
 import '../models/game_state.dart';
 import '../models/level.dart';
+import '../models/player_stats.dart';
 import '../models/power_up.dart';
 import '../services/audio_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
+import '../services/stats_service.dart';
 import '../services/storage_service.dart';
+import '../utils/game_rules.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
   final FoodSpawner _foodSpawner;
   final PowerUpManager _powerUps = PowerUpManager();
+  final ComboTracker _combo = ComboTracker();
   final bool audioEnabled;
   GameState _state;
   Direction _nextDirection = Direction.right;
   bool _directionLocked = false;
   LevelType _level = LevelType.open;
+  GameMode _mode = GameMode.classic;
+  int _foodEaten = 0;
+  int _lastTimeDisplay = 0;
+  List<AchievementId> _lastUnlocked = const <AchievementId>[];
 
   /// [audioEnabled] 为 false 时不触碰音频插件，便于无音频环境与单元测试。
   GameProvider(
     this._storage, {
     Random? random,
+    FoodSpawner? foodSpawner,
     this.audioEnabled = true,
-  })  : _foodSpawner = FoodSpawner(random: random),
-        _state = GameState(
-          snake: Snake(
-            body: [
-              const Point(10, 10),
-              const Point(11, 10),
-              const Point(12, 10),
-            ],
-          ),
-          food: const Food(Point(15, 10)),
-          highScore: _storage.highScore,
-        );
+  }) : _foodSpawner = foodSpawner ?? FoodSpawner(random: random),
+       _state = GameState(
+         snake: Snake(
+           body: [
+             const Point(10, 10),
+             const Point(11, 10),
+             const Point(12, 10),
+           ],
+         ),
+         food: const Food(Point(15, 10)),
+         highScore: _storage.highScore,
+       );
 
   GameState get state => _state;
   bool get isPlaying => _state.status == GameStatus.playing;
@@ -48,6 +60,23 @@ class GameProvider extends ChangeNotifier {
 
   /// 当前选择的关卡，下一局生效。
   LevelType get level => _level;
+
+  /// 当前选择的玩法模式，下一局生效。
+  GameMode get mode => _mode;
+
+  /// 当前连击数，窗口结束后回到 1。
+  int get combo => _combo.combo;
+
+  /// 限时挑战的剩余秒数；其它模式返回 null。
+  double? get remainingSeconds =>
+      _state.mode == GameMode.timed ? _state.remainingSeconds : null;
+
+  /// 最近一局新解锁的成就，开局时清空。
+  List<AchievementId> get lastUnlocked => _lastUnlocked;
+
+  PlayerStats get stats => StatsService.instance.stats;
+
+  int get unlockedAchievementCount => AchievementCatalog.unlockedCount(stats);
 
   Iterable<ActiveEffect> get activeEffects => _powerUps.effects;
   bool hasEffect(PowerUpType type) => _powerUps.has(type);
@@ -83,6 +112,29 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
+  /// 推进连击窗口与限时倒计时，由游戏循环按真实帧时间调用。
+  void tickTime(double dt) {
+    if (_state.status != GameStatus.playing) return;
+
+    if (_combo.update(dt)) {
+      notifyListeners();
+    }
+    if (_state.mode != GameMode.timed) return;
+
+    final left = _state.remainingSeconds - dt;
+    if (left <= 0) {
+      _state = _state.copyWith(remainingSeconds: 0);
+      _finish(GameOverReason.timeout);
+      return;
+    }
+    _state = _state.copyWith(remainingSeconds: left);
+    final display = left.ceil();
+    if (display != _lastTimeDisplay) {
+      _lastTimeDisplay = display;
+      notifyListeners();
+    }
+  }
+
   void start() {
     final w = _state.boardWidth;
     final h = _state.boardHeight;
@@ -91,7 +143,7 @@ class GameProvider extends ChangeNotifier {
 
   /// 使用指定布局开局，供自定义关卡与测试使用。
   void startWithLayout(LevelLayout layout) {
-    LogService.info('游戏开始, 关卡: ${_level.label}');
+    LogService.info('游戏开始, 关卡: ${_level.label}, 模式: ${_mode.label}');
     final w = _state.boardWidth;
     final h = _state.boardHeight;
     final center = w ~/ 2;
@@ -103,6 +155,10 @@ class GameProvider extends ChangeNotifier {
     ];
 
     _powerUps.clear();
+    _combo.reset();
+    _foodEaten = 0;
+    _lastUnlocked = const <AchievementId>[];
+    _lastTimeDisplay = (_mode.initialSeconds ?? 0).ceil();
     _state = GameState(
       snake: Snake(body: body),
       food: _foodSpawner.spawn(
@@ -118,6 +174,8 @@ class GameProvider extends ChangeNotifier {
       speedMs: _state.speedMs,
       level: _level,
       layout: layout,
+      mode: _mode,
+      remainingSeconds: _mode.initialSeconds ?? 0,
     );
     _nextDirection = Direction.right;
     _directionLocked = false;
@@ -174,6 +232,13 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateMode(GameMode mode) {
+    if (_mode == mode) return;
+    _mode = mode;
+    LogService.info('选择玩法: ${mode.label}');
+    notifyListeners();
+  }
+
   /// 推进一次游戏逻辑，由 Flame 按当前移动间隔调用。
   void tick() {
     if (_state.status != GameStatus.playing) return;
@@ -183,6 +248,12 @@ class GameProvider extends ChangeNotifier {
     _directionLocked = false;
 
     var newHead = snake.head.move(dir);
+    if (_state.mode.wrapsEdges) {
+      newHead = Point(
+        newHead.x % _state.boardWidth,
+        newHead.y % _state.boardHeight,
+      );
+    }
     final portalExit = _state.layout.portalExit(newHead);
     if (portalExit != null) {
       LogService.info('穿越传送门: $newHead -> $portalExit');
@@ -198,12 +269,13 @@ class GameProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      _gameOver();
+      _finish(GameOverReason.collision);
       return;
     }
 
     final food = _state.food;
-    final ate = newHead == food.position ||
+    final ate =
+        newHead == food.position ||
         (_powerUps.has(PowerUpType.magnet) &&
             newHead.manhattanTo(food.position) <= 1);
 
@@ -212,11 +284,30 @@ class GameProvider extends ChangeNotifier {
       newBody.removeAt(0);
     }
 
-    final gain = _powerUps.has(PowerUpType.doubleScore) ? 20 : 10;
-    final newScore = ate ? _state.score + gain : _state.score;
+    var gain = 0;
+    var newScore = _state.score;
+    var newRemaining = _state.remainingSeconds;
+    if (ate) {
+      _foodEaten++;
+      _combo.registerEat();
+      gain = GameRules.baseFoodScore * _combo.multiplier;
+      if (_powerUps.has(PowerUpType.doubleScore)) {
+        gain *= 2;
+      }
+      newScore += gain;
+      if (_state.mode == GameMode.timed) {
+        newRemaining = min(
+          GameRules.timedMaxSeconds.toDouble(),
+          newRemaining + GameRules.timedBonusSeconds,
+        );
+        _lastTimeDisplay = newRemaining.ceil();
+      }
+    }
+
     final previousHighScore = _state.highScore;
-    final newHighScore =
-        newScore > previousHighScore ? newScore : previousHighScore;
+    final newHighScore = newScore > previousHighScore
+        ? newScore
+        : previousHighScore;
 
     Food newFood = food;
     if (ate) {
@@ -227,7 +318,7 @@ class GameProvider extends ChangeNotifier {
         layout: _state.layout,
       );
       if (food.type == null) {
-        LogService.info('吃到食物, 得分: $newScore');
+        LogService.info('吃到食物, 得分: $newScore, 连击: ${_combo.combo}');
         if (audioEnabled) {
           AudioService().playEat();
         }
@@ -245,6 +336,7 @@ class GameProvider extends ChangeNotifier {
       food: newFood,
       score: newScore,
       highScore: newHighScore,
+      remainingSeconds: newRemaining,
     );
 
     if (newHighScore > previousHighScore) {
@@ -266,21 +358,41 @@ class GameProvider extends ChangeNotifier {
     return bodyWithoutTail.any((p) => p == head);
   }
 
-  void _gameOver() {
-    LogService.info('游戏结束, 得分: ${_state.score}');
+  void _finish(GameOverReason reason) {
+    LogService.info(
+      '游戏结束(${reason.label}), 得分: ${_state.score}, 连击: ${_combo.best}',
+    );
     if (audioEnabled) {
       AudioService().playGameOver();
     }
     LeaderboardService.addScore(_state.score);
-    final newHighScore =
-        _state.score > _state.highScore ? _state.score : _state.highScore;
+    final newHighScore = _state.score > _state.highScore
+        ? _state.score
+        : _state.highScore;
     if (newHighScore > _state.highScore) {
       _storage.setHighScore(newHighScore);
     }
     _powerUps.clear();
+    final update = StatsService.instance.record(
+      GameRun(
+        mode: _state.mode,
+        score: _state.score,
+        bestCombo: _combo.best,
+        length: _state.snake.body.length,
+        food: _foodEaten,
+      ),
+    );
+    _lastUnlocked = update.unlocked;
+    if (update.unlocked.isNotEmpty) {
+      LogService.info(
+        '解锁成就: ${update.unlocked.map((id) => id.title).join('、')}',
+      );
+    }
+    _combo.reset();
     _state = _state.copyWith(
       status: GameStatus.over,
       highScore: newHighScore,
+      overReason: reason,
     );
     notifyListeners();
   }

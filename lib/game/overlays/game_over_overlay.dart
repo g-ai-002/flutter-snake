@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../models/game_mode.dart';
+import '../../models/game_state.dart';
 import '../../providers/game_provider.dart';
 
 /// 游戏结束结算遮罩。
 class GameOverOverlay extends StatelessWidget {
-  const GameOverOverlay({
-    super.key,
-    required this.provider,
-    this.onRestart,
-  });
+  const GameOverOverlay({super.key, required this.provider, this.onRestart});
 
   final GameProvider provider;
 
@@ -43,9 +41,16 @@ class GameOverOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '游戏结束',
+                  state.overReason.label,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  state.mode.label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -69,6 +74,30 @@ class GameOverOverlay extends StatelessWidget {
                     color: colors.secondary,
                   ),
                 ),
+                if (provider.lastUnlocked.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final id in provider.lastUnlocked)
+                        Chip(
+                          avatar: Icon(
+                            Icons.military_tech,
+                            size: 16,
+                            color: colors.tertiary,
+                          ),
+                          label: Text(id.title),
+                          labelStyle: theme.textTheme.labelSmall,
+                          visualDensity: VisualDensity.compact,
+                          side: BorderSide(
+                            color: colors.tertiary.withValues(alpha: 0.4),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: onRestart ?? provider.start,

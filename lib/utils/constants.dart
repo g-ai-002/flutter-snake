@@ -11,6 +11,7 @@ class AppConstants {
   static const String prefKeyMuted = 'muted';
   static const String prefKeyLevel = 'level';
   static const String prefKeySkin = 'skin';
+  static const String prefKeyMode = 'game_mode';
 
   static const int defaultBoardWidth = 20;
   static const int defaultSpeedMs = 200;

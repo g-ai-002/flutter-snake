@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+
+import '../models/game_mode.dart';
 import '../models/level.dart';
 import '../models/skin.dart';
 import '../services/audio_service.dart';
@@ -15,6 +17,7 @@ class SettingsProvider extends ChangeNotifier {
     _muted = _storage.muted;
     _level = _storage.level;
     _skin = _storage.skin;
+    _mode = _storage.mode;
     AudioService().setMuted(_muted);
   }
 
@@ -24,6 +27,7 @@ class SettingsProvider extends ChangeNotifier {
   late bool _muted;
   late LevelType _level;
   late SnakeSkin _skin;
+  late GameMode _mode;
 
   bool get darkMode => _darkMode;
   int get boardSize => _boardSize;
@@ -31,9 +35,11 @@ class SettingsProvider extends ChangeNotifier {
   bool get muted => _muted;
   LevelType get level => _level;
   SnakeSkin get skin => _skin;
+  GameMode get mode => _mode;
 
   String get levelLabel => _level.label;
   String get skinLabel => _skin.label;
+  String get modeLabel => _mode.label;
 
   String get speedLabel {
     for (final opt in AppConstants.speedOptions) {
@@ -81,6 +87,13 @@ class SettingsProvider extends ChangeNotifier {
     if (_skin == skin) return;
     _skin = skin;
     await _storage.setSkin(skin);
+    notifyListeners();
+  }
+
+  Future<void> setMode(GameMode mode) async {
+    if (_mode == mode) return;
+    _mode = mode;
+    await _storage.setMode(mode);
     notifyListeners();
   }
 

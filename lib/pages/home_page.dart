@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
+import 'achievements_page.dart';
 import 'game_page.dart';
 import 'leaderboard_page.dart';
 import 'settings_page.dart';
@@ -14,11 +15,13 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final highScore = context.select<GameProvider, int>((g) => g.state.highScore);
+    final unlocked = context.select<GameProvider, int>((g) => g.unlockedAchievementCount);
     final darkMode = context.select<SettingsProvider, bool>((s) => s.darkMode);
     final boardSizeLabel = context.select<SettingsProvider, String>((s) => s.boardSizeLabel);
     final speedLabel = context.select<SettingsProvider, String>((s) => s.speedLabel);
     final levelLabel = context.select<SettingsProvider, String>((s) => s.levelLabel);
     final skinLabel = context.select<SettingsProvider, String>((s) => s.skinLabel);
+    final modeLabel = context.select<SettingsProvider, String>((s) => s.modeLabel);
     final settings = context.read<SettingsProvider>();
 
     return Scaffold(
@@ -87,6 +90,18 @@ class HomePage extends StatelessWidget {
                     label: const Text('排行榜'),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: 200,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementsPage()));
+                    },
+                    icon: const Icon(Icons.military_tech),
+                    label: Text('成就 $unlocked'),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   '最高分: $highScore',
@@ -96,12 +111,17 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '关卡: $levelLabel  |  皮肤: $skinLabel',
+                  '模式: $modeLabel  |  关卡: $levelLabel',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '棋盘: $boardSizeLabel  |  速度: $speedLabel',
+                  '皮肤: $skinLabel  |  棋盘: $boardSizeLabel',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '速度: $speedLabel',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

@@ -9,6 +9,7 @@ import 'providers/settings_provider.dart';
 import 'services/audio_service.dart';
 import 'services/log_service.dart';
 import 'services/logging_init.dart';
+import 'services/stats_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
@@ -21,6 +22,7 @@ Future<void> main() async {
 
   final storage = await StorageService.instance;
   await initLogging();
+  await StatsService.instance.load();
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
   AudioService().setMuted(storage.muted);
@@ -39,8 +41,8 @@ class SnakeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final fontFamily =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.windows
-            ? 'Microsoft YaHei UI'
-            : null;
+        ? 'Microsoft YaHei UI'
+        : null;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider(storage)),

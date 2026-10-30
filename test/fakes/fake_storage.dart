@@ -1,3 +1,4 @@
+import 'package:flutter_snake/models/game_mode.dart';
 import 'package:flutter_snake/models/level.dart';
 import 'package:flutter_snake/models/skin.dart';
 import 'package:flutter_snake/services/storage_service.dart';
@@ -68,5 +69,15 @@ class FakeStorageService extends StorageService {
   @override
   Future<void> setSkin(SnakeSkin v) async {
     _skin = v;
+  }
+
+  GameMode _mode = GameMode.classic;
+
+  @override
+  GameMode get mode => _mode;
+
+  @override
+  Future<void> setMode(GameMode v) async {
+    _mode = v;
   }
 }

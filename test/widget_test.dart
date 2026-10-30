@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_snake/models/game_state.dart';
+import 'package:flutter_snake/models/game_mode.dart';
 import 'package:flutter_snake/models/level.dart';
 import 'package:flutter_snake/models/power_up.dart';
 import 'package:flutter_snake/models/skin.dart';
@@ -49,6 +50,7 @@ void main() {
     expect(settings.boardSize, 20);
     expect(settings.speed, 200);
     expect(settings.muted, isFalse);
+    expect(settings.mode, GameMode.classic);
   });
 
   testWidgets('SettingsProvider 静音切换', (WidgetTester tester) async {
@@ -264,6 +266,15 @@ void main() {
       await settings.setSkin(SnakeSkin.pixel);
       expect(settings.skin, SnakeSkin.pixel);
       expect(storage.skin, SnakeSkin.pixel);
+    });
+
+    testWidgets('setMode 持久化', (WidgetTester tester) async {
+      final storage = FakeStorageService.create();
+      await tester.pumpWidget(buildTestApp(storage));
+      final settings = tester.element(find.byType(MaterialApp)).read<SettingsProvider>();
+      await settings.setMode(GameMode.wrap);
+      expect(settings.mode, GameMode.wrap);
+      expect(storage.mode, GameMode.wrap);
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'game_mode.dart';
 import 'level.dart';
 import 'power_up.dart';
 
@@ -20,6 +21,20 @@ extension DirectionInfo on Direction {
 }
 
 enum GameStatus { idle, playing, paused, over }
+
+/// 单局结束原因，用于结算文案。
+enum GameOverReason { collision, timeout }
+
+extension GameOverReasonInfo on GameOverReason {
+  String get label {
+    switch (this) {
+      case GameOverReason.collision:
+        return '游戏结束';
+      case GameOverReason.timeout:
+        return '时间到';
+    }
+  }
+}
 
 class Point {
   final int x;
@@ -44,7 +59,8 @@ class Point {
   }
 
   @override
-  bool operator ==(Object other) => other is Point && other.x == x && other.y == y;
+  bool operator ==(Object other) =>
+      other is Point && other.x == x && other.y == y;
 
   @override
   int get hashCode => x.hashCode ^ (y.hashCode << 16);
@@ -57,10 +73,7 @@ class Snake {
   final List<Point> body;
   Direction direction;
 
-  Snake({
-    required this.body,
-    this.direction = Direction.right,
-  });
+  Snake({required this.body, this.direction = Direction.right});
 
   Point get head => body.last;
 
@@ -90,6 +103,9 @@ class GameState {
   final int speedMs;
   final LevelType level;
   final LevelLayout layout;
+  final GameMode mode;
+  final double remainingSeconds;
+  final GameOverReason overReason;
 
   GameState({
     required this.snake,
@@ -102,6 +118,9 @@ class GameState {
     this.speedMs = 200,
     this.level = LevelType.open,
     this.layout = LevelLayout.empty,
+    this.mode = GameMode.classic,
+    this.remainingSeconds = 0,
+    this.overReason = GameOverReason.collision,
   });
 
   GameState copyWith({
@@ -115,6 +134,9 @@ class GameState {
     int? speedMs,
     LevelType? level,
     LevelLayout? layout,
+    GameMode? mode,
+    double? remainingSeconds,
+    GameOverReason? overReason,
   }) {
     return GameState(
       snake: snake ?? this.snake,
@@ -127,6 +149,9 @@ class GameState {
       speedMs: speedMs ?? this.speedMs,
       level: level ?? this.level,
       layout: layout ?? this.layout,
+      mode: mode ?? this.mode,
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      overReason: overReason ?? this.overReason,
     );
   }
 }

@@ -61,6 +61,7 @@ class _GamePageState extends State<GamePage> {
     provider.updateLevel(settings.level);
     provider.updateBoardSize(settings.boardSize);
     provider.updateSpeed(settings.speed);
+    provider.updateMode(settings.mode);
 
     final colors = Theme.of(context).colorScheme;
     _game = SnakeGame(
@@ -151,7 +152,8 @@ class _GamePageState extends State<GamePage> {
     return Scaffold(
       appBar: AppBar(
         title: Consumer<GameProvider>(
-          builder: (context, provider, _) => Text('得分: ${provider.state.score}'),
+          builder: (context, provider, _) =>
+              Text('得分: ${provider.state.score}'),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -185,9 +187,9 @@ class _GamePageState extends State<GamePage> {
                 focusNode: _gameFocusNode,
                 overlayBuilderMap: {
                   SnakeGame.pauseOverlayId: (_, SnakeGame game) => PauseOverlay(
-                        provider: game.provider,
-                        onResume: () => _resumeGame(game),
-                      ),
+                    provider: game.provider,
+                    onResume: () => _resumeGame(game),
+                  ),
                   SnakeGame.countdownOverlayId: (_, SnakeGame game) =>
                       CountdownOverlay(countdown: game.countdown),
                   SnakeGame.gameOverOverlayId: (_, SnakeGame game) =>
