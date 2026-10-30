@@ -10,7 +10,7 @@ import '../models/game_state.dart';
 import '../models/power_up.dart';
 import '../models/skin.dart';
 import '../providers/game_provider.dart';
-import 'board_camera.dart';
+import 'camera_rig.dart';
 import 'components/board_component.dart';
 import 'components/board_layer_component.dart';
 import 'components/death_flash_component.dart';
@@ -20,6 +20,8 @@ import 'components/portal_component.dart';
 import 'components/score_popup_layer.dart';
 import 'components/snake_component.dart';
 import 'components/wall_component.dart';
+import 'countdown_controller.dart';
+import 'feedback_controller.dart';
 import 'input/canvas_gesture_layer.dart';
 import 'input/direction_input.dart';
 import 'power_up_style.dart';
@@ -31,9 +33,10 @@ const double _worldSize = 400;
 
 /// 基于 Flame 的贪吃蛇游戏。
 ///
-/// 棋盘、食物、蛇、粒子和飘字都放在 [World] 中，相机把 400×400 的世界棋盘
-/// 对齐到 Flutter 侧给出的棋盘槽位；画布铺满整个游戏页，棋盘以外的区域由
-/// 悬浮的 Flutter HUD 覆盖。游戏规则仍由 [GameProvider] 持有。
+/// 棋盘、食物、蛇、粒子和飘字都放在 [World] 中，[CameraRig] 把 400×400 的
+/// 世界棋盘对齐到 Flutter 侧给出的棋盘槽位；画布铺满整个游戏页，棋盘以外的
+/// 区域由悬浮的 Flutter HUD 覆盖。游戏规则仍由 [GameProvider] 持有，
+/// 视觉反馈与倒计时分别交给 [FeedbackController] 与 [CountdownController]。
 class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   SnakeGame({
     required this.provider,
@@ -47,11 +50,16 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   }) : super(
           world: SnakeWorld(),
           camera: CameraComponent(),
-        );
+        ) {
+    _camera = CameraRig(camera: camera, worldSize: _worldSize);
+  }
 
   static const String pauseOverlayId = 'pause';
   static const String countdownOverlayId = 'countdown';
   static const String gameOverOverlayId = 'gameOver';
+
+  static const int _maxStepsPerFrame = 4;
+  static const double _gameOverOverlayDelay = 0.55;
 
   final GameProvider provider;
   final Color surfaceColor;
@@ -62,8 +70,14 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   final Color portalColor;
   final SnakeSkin skin;
 
+  late final CameraRig _camera;
+  final FeedbackController _feedback = FeedbackController();
+  final CountdownController _countdown = CountdownController();
+
   /// 开局倒计时：3、2、1、0（0 显示 GO）。
-  final ValueNotifier<int> countdown = ValueNotifier<int>(0);
+  ValueNotifier<int> get countdown => _countdown.value;
+
+  late final Color _snakeTint = snakeSkinColor(skin) ?? snakeColor;
 
   late final BoardComponent _board;
   late final WallComponent _walls;
@@ -78,47 +92,16 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
 
   SkinSprites _sprites = SkinSprites.empty;
 
-  final math.Random _random = math.Random();
-
-  Vector2 _cameraBase = Vector2(_worldSize / 2, _worldSize / 2);
-  Size _canvasSize = Size.zero;
-  Rect _boardRect = Rect.zero;
-  double _baseZoom = 1;
   double _worldCellSize = 0;
-
   bool _ready = false;
   double _accumulator = 0;
   GameStatus _lastStatus = GameStatus.idle;
 
-  double _zoomPulse = 0;
-  double _zoomStrength = 0.025;
-  double _shakeRemaining = 0;
-  double _flashRemaining = 0;
-  double _slowMotionRemaining = 0;
-
-  bool _countdownActive = false;
-  double _countdownRemaining = 0;
-  double _goRemaining = 0;
-
   bool _gameOverOverlayPending = false;
-  double _gameOverOverlayDelay = 0;
-
-  int _combo = 1;
-  double _comboTimer = 0;
-
-  static const int _maxStepsPerFrame = 4;
-  static const double _zoomDuration = 0.28;
-  static const double _shakeDuration = 0.45;
-  static const double _flashDuration = 0.3;
-  static const double _slowMotionDuration = 0.45;
-  static const double _slowMotionScale = 0.35;
-  static const double _comboWindow = 2.5;
-  static const double _countdownSeconds = 3.0;
+  double _gameOverOverlayTimer = 0;
 
   @override
   Color backgroundColor() => surfaceColor;
-
-  Color get _snakeTint => snakeSkinColor(skin) ?? snakeColor;
 
   @override
   KeyEventResult onKeyEvent(
@@ -131,30 +114,16 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       return KeyEventResult.ignored;
     }
 
-    final key = event.logicalKey;
-    Direction? direction;
-    if (key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.keyW) {
-      direction = Direction.up;
-    } else if (key == LogicalKeyboardKey.arrowDown ||
-        key == LogicalKeyboardKey.keyS) {
-      direction = Direction.down;
-    } else if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.keyA) {
-      direction = Direction.left;
-    } else if (key == LogicalKeyboardKey.arrowRight ||
-        key == LogicalKeyboardKey.keyD) {
-      direction = Direction.right;
-    }
+    final direction = _directionFor(event.logicalKey);
     if (direction != null) {
       provider.changeDirection(direction);
       return KeyEventResult.handled;
     }
 
     if (isDown &&
-        (key == LogicalKeyboardKey.space ||
-            key == LogicalKeyboardKey.keyP ||
-            key == LogicalKeyboardKey.escape)) {
+        (event.logicalKey == LogicalKeyboardKey.space ||
+            event.logicalKey == LogicalKeyboardKey.keyP ||
+            event.logicalKey == LogicalKeyboardKey.escape)) {
       provider.togglePause();
       return KeyEventResult.handled;
     }
@@ -162,9 +131,24 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     return KeyEventResult.ignored;
   }
 
+  Direction? _directionFor(LogicalKeyboardKey key) {
+    if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.keyW) {
+      return Direction.up;
+    }
+    if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.keyS) {
+      return Direction.down;
+    }
+    if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.keyA) {
+      return Direction.left;
+    }
+    if (key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.keyD) {
+      return Direction.right;
+    }
+    return null;
+  }
+
   @override
   Future<void> onLoad() async {
-    final snakeTint = snakeSkinColor(skin) ?? snakeColor;
     final foodTint = snakeSkinFoodColor(skin) ?? foodColor;
     if (skin.usesSprites) {
       _sprites = await SkinSprites.load(this, skin);
@@ -195,7 +179,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     );
     _snake = SnakeComponent(
       provider: provider,
-      color: snakeTint,
+      color: _snakeTint,
       skin: skin,
       sprites: _sprites,
       priority: 4,
@@ -209,7 +193,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       provider: provider,
       priority: 6,
     );
-    _scorePopups = ScorePopupLayer(color: snakeTint);
+    _scorePopups = ScorePopupLayer(color: _snakeTint);
 
     _layers = <BoardLayerComponent>[
       _board,
@@ -230,8 +214,8 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     );
     camera.viewport.add(_gestures);
 
-    _canvasSize = Size(size.x, size.y);
-    _applyCamera();
+    _camera.resize(Size(size.x, size.y));
+    _camera.applyBase();
     _ready = true;
     _snake.snapToCurrent();
     provider.addListener(_handleProviderChange);
@@ -239,6 +223,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
 
   @override
   void onRemove() {
+    _countdown.dispose();
     detachProvider();
     super.onRemove();
   }
@@ -260,28 +245,23 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    _canvasSize = Size(size.x, size.y);
-    _applyCamera();
+    _camera.resize(Size(size.x, size.y));
   }
 
   /// Flutter 侧把棋盘槽位的页面矩形同步过来，相机据此把世界棋盘画在槽位里。
   void updateBoardLayout({required Rect boardRect, required Size canvasSize}) {
-    if (_boardRect == boardRect && _canvasSize == canvasSize) {
-      return;
-    }
-    _boardRect = boardRect;
-    _canvasSize = canvasSize;
-    _applyCamera();
+    _camera.updateLayout(boardRect: boardRect, canvasSize: canvasSize);
   }
 
   /// 点击画布任意位置：按点击点相对棋盘中心的方向转向。
   void handleTap(Offset position) {
-    if (_boardRect.isEmpty) {
+    final boardRect = _camera.boardRect;
+    if (boardRect.isEmpty) {
       return;
     }
     final direction = directionFromTap(
-      position - _boardRect.topLeft,
-      _boardRect.size,
+      position - boardRect.topLeft,
+      boardRect.size,
     );
     if (direction != null) {
       provider.changeDirection(direction);
@@ -296,29 +276,6 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     provider.changeDirection(directionFromDelta(delta));
   }
 
-  void _applyCamera() {
-    if (_boardRect.isEmpty || _canvasSize.isEmpty) {
-      return;
-    }
-    final layout = _layoutFor();
-    _baseZoom = layout.zoom;
-    _cameraBase = layout.position;
-    camera.viewfinder.zoom = _baseZoom;
-    camera.viewfinder.position = _cameraBase;
-  }
-
-  BoardCameraLayout _layoutFor([double? zoom]) {
-    if (_boardRect.isEmpty || _canvasSize.isEmpty) {
-      return BoardCameraLayout(zoom: _baseZoom, position: _cameraBase.clone());
-    }
-    return cameraLayoutForBoard(
-      canvasSize: _canvasSize,
-      boardRect: _boardRect,
-      worldBoardRect: const Rect.fromLTWH(0, 0, _worldSize, _worldSize),
-      zoom: zoom,
-    );
-  }
-
   @override
   void update(double dt) {
     super.update(dt);
@@ -326,10 +283,13 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       return;
     }
 
-    _updateSlowMotion(dt);
-    final visualDt = _slowMotionRemaining > 0 ? dt * _slowMotionScale : dt;
-    _updateCamera(visualDt);
-    _updateFeedback(visualDt);
+    _feedback.updateVisuals(dt);
+    world.timeScale = _feedback.timeScale;
+    _flash.opacity = _feedback.flashOpacity;
+
+    final visualDt =
+        _feedback.isSlowMotion ? dt * FeedbackController.slowMotionScale : dt;
+    _camera.update(visualDt);
     _updateGameOverOverlay(dt);
 
     final status = provider.state.status;
@@ -340,20 +300,16 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       return;
     }
 
-    if (_countdownActive) {
-      _updateCountdown(dt);
+    if (_countdown.isActive) {
+      if (_countdown.update(dt)) {
+        overlays.remove(countdownOverlayId);
+      }
       provider.unlockDirection();
       return;
     }
 
     provider.updateEffects(dt);
-
-    if (_comboTimer > 0) {
-      _comboTimer = math.max(0.0, _comboTimer - dt);
-      if (_comboTimer == 0) {
-        _combo = 1;
-      }
-    }
+    _feedback.tickCombo(dt);
 
     final step = provider.effectiveSpeedMs / 1000;
     if (step <= 0) {
@@ -363,30 +319,9 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _accumulator += dt;
     var steps = 0;
     while (_accumulator >= step && steps < _maxStepsPerFrame) {
-      final oldFood = provider.state.food;
-      final oldScore = provider.state.score;
-      final hadShield = provider.hasShield;
-      final previousHead = provider.state.snake.head;
-
       _accumulator -= step;
       steps++;
-      _snake.beginStep();
-      provider.tick();
-
-      final newHead = provider.state.snake.head;
-      if ((newHead.x - previousHead.x).abs() > 1 ||
-          (newHead.y - previousHead.y).abs() > 1) {
-        _onPortalJump(previousHead, newHead);
-      }
-      if (hadShield && !provider.hasShield && provider.isPlaying) {
-        _onShieldBreak(provider.state.snake.head);
-      }
-      if (provider.state.score > oldScore) {
-        _onEat(oldFood, provider.state.score - oldScore);
-      }
-      if (!provider.isPlaying) {
-        _accumulator = 0;
-        _handleStatusChange(provider.state.status);
+      if (!_step()) {
         return;
       }
     }
@@ -395,6 +330,35 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     _snake.setProgress(_accumulator / step);
+  }
+
+  /// 推进一步游戏逻辑；返回 false 表示本帧不再继续推进。
+  bool _step() {
+    final oldFood = provider.state.food;
+    final oldScore = provider.state.score;
+    final hadShield = provider.hasShield;
+    final previousHead = provider.state.snake.head;
+
+    _snake.beginStep();
+    provider.tick();
+
+    final newHead = provider.state.snake.head;
+    if ((newHead.x - previousHead.x).abs() > 1 ||
+        (newHead.y - previousHead.y).abs() > 1) {
+      _onPortalJump(previousHead, newHead);
+    }
+    if (hadShield && !provider.hasShield && provider.isPlaying) {
+      _onShieldBreak(newHead);
+    }
+    if (provider.state.score > oldScore) {
+      _onEat(oldFood, provider.state.score - oldScore);
+    }
+    if (!provider.isPlaying) {
+      _accumulator = 0;
+      _handleStatusChange(provider.state.status);
+      return false;
+    }
+    return true;
   }
 
   void _handleStatusChange(GameStatus status) {
@@ -428,8 +392,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     if (status == GameStatus.idle) {
-      _countdownActive = false;
-      countdown.value = 0;
+      _countdown.stop();
       overlays.remove(countdownOverlayId);
       overlays.remove(gameOverOverlayId);
       _snake.snapToCurrent();
@@ -441,83 +404,42 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _particles.clear();
     _scorePopups.clear();
     _flash.opacity = 0;
-    _flashRemaining = 0;
-    _shakeRemaining = 0;
-    _zoomPulse = 0;
-    _zoomStrength = 0.025;
-    _slowMotionRemaining = 0;
+    _feedback.reset();
     world.timeScale = 1.0;
-    _applyCamera();
+    _camera.reset();
     _snake.snapToCurrent();
-    _combo = 1;
-    _comboTimer = 0;
-    _countdownActive = false;
-    countdown.value = 0;
+    _countdown.stop();
     _gameOverOverlayPending = false;
     overlays.remove(gameOverOverlayId);
     overlays.remove(countdownOverlayId);
   }
 
   void _startCountdown() {
-    _countdownActive = true;
-    _countdownRemaining = _countdownSeconds;
-    _goRemaining = 0;
-    countdown.value = 3;
+    _countdown.start();
     overlays.add(countdownOverlayId, priority: 10);
   }
 
-  void _updateCountdown(double dt) {
-    if (_countdownRemaining > 0) {
-      _countdownRemaining -= dt;
-      final value = _countdownRemaining.ceil().clamp(1, 3).toInt();
-      if (countdown.value != value) {
-        countdown.value = value;
-      }
-      if (_countdownRemaining <= 0) {
-        _goRemaining = 0.45;
-        countdown.value = 0;
-      }
-      return;
-    }
-
-    _goRemaining -= dt;
-    if (_goRemaining <= 0) {
-      _countdownActive = false;
-      overlays.remove(countdownOverlayId);
-    }
-  }
-
   void _triggerDeath() {
-    _countdownActive = false;
-    countdown.value = 0;
+    _countdown.stop();
     overlays.remove(countdownOverlayId);
     _accumulator = 0;
     _snake.snapToCurrent();
-    _combo = 1;
-    _comboTimer = 0;
-    _slowMotionRemaining = _slowMotionDuration;
-    world.timeScale = _slowMotionScale;
-    _zoomPulse = 1;
-    _zoomStrength = 0.06;
-    _shakeRemaining = _shakeDuration;
-    _flashRemaining = _flashDuration;
+    _feedback.triggerDeath();
+    world.timeScale = _feedback.timeScale;
+    _camera.pulse(strength: 0.06);
+    _camera.shake();
     _gameOverOverlayPending = true;
-    _gameOverOverlayDelay = 0.55;
+    _gameOverOverlayTimer = _gameOverOverlayDelay;
   }
 
   void _onEat(Food food, int gain) {
-    _combo = _comboTimer > 0 ? _combo + 1 : 1;
-    _comboTimer = _comboWindow;
+    final combo = _feedback.registerEat();
     final type = food.type;
     final pickupColor = type == null ? _snakeTint : powerUpColor(type);
     final baseLabel = type == null ? '+$gain' : '+$gain ${type.shortLabel}';
-    final label = _combo > 1 ? '$baseLabel x$_combo' : baseLabel;
-    final position = Vector2(
-      (food.position.x + 0.5) * _worldCellSize,
-      (food.position.y + 0.5) * _worldCellSize,
-    );
+    final label = combo > 1 ? '$baseLabel x$combo' : baseLabel;
     _scorePopups.show(
-      position,
+      _cellCenter(food.position),
       label,
       _worldCellSize * 1.4,
       color: pickupColor,
@@ -527,13 +449,9 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
 
   void _onShieldBreak(Point head) {
     final color = powerUpColor(PowerUpType.shield);
-    final position = Vector2(
-      (head.x + 0.5) * _worldCellSize,
-      (head.y + 0.5) * _worldCellSize,
-    );
     _particles.burst(head, color: color);
     _scorePopups.show(
-      position,
+      _cellCenter(head),
       'SHIELD',
       _worldCellSize * 1.2,
       color: color,
@@ -545,51 +463,19 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _particles.burst(to, color: portalColor);
   }
 
-  void _updateSlowMotion(double dt) {
-    if (_slowMotionRemaining <= 0) {
-      if (world.timeScale != 1.0) {
-        world.timeScale = 1.0;
-      }
-      return;
-    }
-    _slowMotionRemaining = math.max(0.0, _slowMotionRemaining - dt);
-    world.timeScale = _slowMotionRemaining > 0 ? _slowMotionScale : 1.0;
-  }
-
-  void _updateCamera(double dt) {
-    _zoomPulse = math.max(0.0, _zoomPulse - dt / _zoomDuration);
-    final eased = 1 - (1 - _zoomPulse) * (1 - _zoomPulse);
-    final zoom = _baseZoom * (1 + _zoomStrength * eased);
-    final base = _layoutFor(zoom).position;
-    _cameraBase = base;
-    camera.viewfinder.zoom = zoom;
-
-    if (_shakeRemaining > 0) {
-      _shakeRemaining = math.max(0.0, _shakeRemaining - dt);
-      final strength =
-          _worldSize * 0.012 * (_shakeRemaining / _shakeDuration);
-      camera.viewfinder.position = Vector2(
-        base.x + (_random.nextDouble() * 2 - 1) * strength,
-        base.y + (_random.nextDouble() * 2 - 1) * strength,
-      );
-    } else {
-      camera.viewfinder.position = base;
-    }
-  }
-
-  void _updateFeedback(double dt) {
-    if (_flashRemaining > 0) {
-      _flashRemaining = math.max(0.0, _flashRemaining - dt);
-      _flash.opacity = 0.42 * (_flashRemaining / _flashDuration);
-    }
+  Vector2 _cellCenter(Point cell) {
+    return Vector2(
+      (cell.x + 0.5) * _worldCellSize,
+      (cell.y + 0.5) * _worldCellSize,
+    );
   }
 
   void _updateGameOverOverlay(double dt) {
     if (!_gameOverOverlayPending) {
       return;
     }
-    _gameOverOverlayDelay -= dt;
-    if (_gameOverOverlayDelay <= 0) {
+    _gameOverOverlayTimer -= dt;
+    if (_gameOverOverlayTimer <= 0) {
       _gameOverOverlayPending = false;
       overlays.add(gameOverOverlayId, priority: 20);
     }
