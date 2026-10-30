@@ -62,6 +62,22 @@ void main() {
       final dirs = Direction.values.toSet();
       expect(dirs.length, 4);
     });
+
+    test('opposite 两两互换', () {
+      expect(Direction.up.opposite, Direction.down);
+      expect(Direction.down.opposite, Direction.up);
+      expect(Direction.left.opposite, Direction.right);
+      expect(Direction.right.opposite, Direction.left);
+    });
+  });
+
+  group('Point 距离', () {
+    test('曼哈顿距离', () {
+      expect(const Point(2, 3).manhattanTo(const Point(2, 3)), 0);
+      expect(const Point(2, 3).manhattanTo(const Point(3, 3)), 1);
+      expect(const Point(0, 0).manhattanTo(const Point(3, 4)), 7);
+      expect(const Point(5, 5).manhattanTo(const Point(1, 2)), 7);
+    });
   });
 
   group('Food', () {
