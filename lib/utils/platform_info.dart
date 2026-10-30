@@ -7,9 +7,6 @@ bool get isDesktopPlatform =>
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.linux);
 
-/// 是否运行在浏览器中。
-bool get isWebPlatform => kIsWeb;
-
 /// 平台名称，用于日志与设置页展示。
 String get platformLabel {
   if (kIsWeb) return 'Web';

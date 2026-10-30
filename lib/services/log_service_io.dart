@@ -90,7 +90,11 @@ class LogService {
   static void _log(String level, String message) {
     final inst = _instance;
     if (inst == null || !inst._initialized) {
-      final line = _formatLine(DateTime.now(), level, message);
+      final line = _formatLine(
+        inst?._now() ?? DateTime.now(),
+        level,
+        message,
+      );
       _earlyBuffer.add(line);
       if (_earlyBuffer.length > _maxEarlyLines) {
         _earlyBuffer.removeAt(0);

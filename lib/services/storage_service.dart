@@ -25,52 +25,69 @@ class StorageService {
     return p;
   }
 
-  bool get darkMode => _p.getBool(AppConstants.prefKeyDarkMode) ?? false;
-  Future<void> setDarkMode(bool v) async {
-    try { await _p.setBool(AppConstants.prefKeyDarkMode, v); } catch (_) {}
+  /// 写入失败（如存储不可用）时静默忽略，不影响游戏主流程。
+  Future<void> _write(
+    Future<bool> Function(SharedPreferences prefs) action,
+  ) async {
+    try {
+      await action(_p);
+    } catch (_) {}
   }
+
+  /// 枚举按名称存取，遇到未知值回退到默认项。
+  T _enumValue<T extends Enum>(List<T> values, String key, T fallback) {
+    final name = _p.getString(key);
+    for (final value in values) {
+      if (value.name == name) return value;
+    }
+    return fallback;
+  }
+
+  bool get darkMode => _p.getBool(AppConstants.prefKeyDarkMode) ?? false;
+  Future<void> setDarkMode(bool v) => _write(
+        (p) => p.setBool(AppConstants.prefKeyDarkMode, v),
+      );
 
   int get highScore => _p.getInt(AppConstants.prefKeyHighScore) ?? 0;
-  Future<void> setHighScore(int v) async {
-    try { await _p.setInt(AppConstants.prefKeyHighScore, v); } catch (_) {}
-  }
+  Future<void> setHighScore(int v) => _write(
+        (p) => p.setInt(AppConstants.prefKeyHighScore, v),
+      );
 
-  int get boardSize => _p.getInt(AppConstants.prefKeyBoardSize) ?? AppConstants.defaultBoardWidth;
-  Future<void> setBoardSize(int v) async {
-    try { await _p.setInt(AppConstants.prefKeyBoardSize, v); } catch (_) {}
-  }
+  int get boardSize =>
+      _p.getInt(AppConstants.prefKeyBoardSize) ??
+      AppConstants.defaultBoardWidth;
+  Future<void> setBoardSize(int v) => _write(
+        (p) => p.setInt(AppConstants.prefKeyBoardSize, v),
+      );
 
-  int get speed => _p.getInt(AppConstants.prefKeySpeed) ?? AppConstants.defaultSpeedMs;
-  Future<void> setSpeed(int v) async {
-    try { await _p.setInt(AppConstants.prefKeySpeed, v); } catch (_) {}
-  }
+  int get speed =>
+      _p.getInt(AppConstants.prefKeySpeed) ?? AppConstants.defaultSpeedMs;
+  Future<void> setSpeed(int v) => _write(
+        (p) => p.setInt(AppConstants.prefKeySpeed, v),
+      );
 
   bool get muted => _p.getBool(AppConstants.prefKeyMuted) ?? false;
-  Future<void> setMuted(bool v) async {
-    try { await _p.setBool(AppConstants.prefKeyMuted, v); } catch (_) {}
-  }
+  Future<void> setMuted(bool v) => _write(
+        (p) => p.setBool(AppConstants.prefKeyMuted, v),
+      );
 
-  LevelType get level {
-    final name = _p.getString(AppConstants.prefKeyLevel);
-    return LevelType.values.firstWhere(
-      (value) => value.name == name,
-      orElse: () => LevelType.open,
-    );
-  }
+  LevelType get level => _enumValue(
+        LevelType.values,
+        AppConstants.prefKeyLevel,
+        LevelType.open,
+      );
 
-  Future<void> setLevel(LevelType v) async {
-    try { await _p.setString(AppConstants.prefKeyLevel, v.name); } catch (_) {}
-  }
+  Future<void> setLevel(LevelType v) => _write(
+        (p) => p.setString(AppConstants.prefKeyLevel, v.name),
+      );
 
-  SnakeSkin get skin {
-    final name = _p.getString(AppConstants.prefKeySkin);
-    return SnakeSkin.values.firstWhere(
-      (value) => value.name == name,
-      orElse: () => SnakeSkin.classic,
-    );
-  }
+  SnakeSkin get skin => _enumValue(
+        SnakeSkin.values,
+        AppConstants.prefKeySkin,
+        SnakeSkin.classic,
+      );
 
-  Future<void> setSkin(SnakeSkin v) async {
-    try { await _p.setString(AppConstants.prefKeySkin, v.name); } catch (_) {}
-  }
+  Future<void> setSkin(SnakeSkin v) => _write(
+        (p) => p.setString(AppConstants.prefKeySkin, v.name),
+      );
 }

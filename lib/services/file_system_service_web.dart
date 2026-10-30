@@ -12,8 +12,6 @@ class FileSystemService {
 
   Future<String> getLogRootPath() async => '';
 
-  Future<String> getUserRootPath() async => '';
-
   /// 浏览器无法打开系统文件管理器。
   Future<bool> openDirectory(String path) async => false;
 }

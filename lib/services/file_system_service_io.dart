@@ -62,20 +62,4 @@ class FileSystemService {
     }
     return false;
   }
-
-  Directory? _userRoot;
-
-  /// 用户根目录：<Documents 或 external>/<appDirName>
-  Future<Directory> getUserRoot() async {
-    if (_userRoot != null) return _userRoot!;
-    final base = await _baseDir();
-    final root = Directory(
-      '${base.path}${Platform.pathSeparator}$appDirName',
-    );
-    if (!await root.exists()) {
-      await root.create(recursive: true);
-    }
-    _userRoot = root;
-    return root;
-  }
 }

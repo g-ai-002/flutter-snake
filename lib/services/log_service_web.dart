@@ -41,9 +41,6 @@ class LogService {
     }
   }
 
-  /// 内存日志无需刷盘，保留该方法方便调用方统一收尾。
-  static Future<void> flush() async {}
-
   static void _write(String level, String message) {
     if (!_initialized) {
       // 与 IO 实现一致：初始化前的日志也保留在内存缓冲里。

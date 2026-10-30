@@ -205,8 +205,8 @@ class SnakeComponent extends BoardLayerComponent {
   void _drawSpriteDeadEyes(Canvas canvas, Offset center) {
     final eyeRadius = cellSize * 0.1;
     final offsets = _eyeOffsets(provider.state.snake.direction);
-    final leftEye = center + Offset(offsets[0], offsets[1]);
-    final rightEye = center + Offset(offsets[2], offsets[3]);
+    final leftEye = center + _scaled(offsets, 0);
+    final rightEye = center + _scaled(offsets, 2);
 
     canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
     canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
@@ -287,10 +287,10 @@ class SnakeComponent extends BoardLayerComponent {
     final eyeRadius = cellSize * 0.12;
     final pupilRadius = cellSize * 0.06;
     final offsets = _eyeOffsets(provider.state.snake.direction);
-    final leftEye = center + Offset(offsets[0], offsets[1]);
-    final rightEye = center + Offset(offsets[2], offsets[3]);
-    final leftPupil = center + Offset(offsets[4], offsets[5]);
-    final rightPupil = center + Offset(offsets[6], offsets[7]);
+    final leftEye = center + _scaled(offsets, 0);
+    final rightEye = center + _scaled(offsets, 2);
+    final leftPupil = center + _scaled(offsets, 4);
+    final rightPupil = center + _scaled(offsets, 6);
 
     canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
     canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
@@ -301,8 +301,8 @@ class SnakeComponent extends BoardLayerComponent {
   void _drawDeadEyes(Canvas canvas, Offset center) {
     final eyeRadius = cellSize * 0.12;
     final offsets = _eyeOffsets(provider.state.snake.direction);
-    final leftEye = center + Offset(offsets[0], offsets[1]);
-    final rightEye = center + Offset(offsets[2], offsets[3]);
+    final leftEye = center + _scaled(offsets, 0);
+    final rightEye = center + _scaled(offsets, 2);
 
     canvas.drawCircle(leftEye, eyeRadius, _eyePaint);
     canvas.drawCircle(rightEye, eyeRadius, _eyePaint);
@@ -323,53 +323,18 @@ class SnakeComponent extends BoardLayerComponent {
     );
   }
 
-  List<double> _eyeOffsets(Direction dir) {
-    final cs = cellSize;
-    switch (dir) {
-      case Direction.right:
-        return [
-          cs * 0.2,
-          -cs * 0.2,
-          cs * 0.2,
-          cs * 0.2,
-          cs * 0.25,
-          -cs * 0.2,
-          cs * 0.25,
-          cs * 0.2,
-        ];
-      case Direction.left:
-        return [
-          -cs * 0.2,
-          -cs * 0.2,
-          -cs * 0.2,
-          cs * 0.2,
-          -cs * 0.25,
-          -cs * 0.2,
-          -cs * 0.25,
-          cs * 0.2,
-        ];
-      case Direction.up:
-        return [
-          -cs * 0.2,
-          -cs * 0.2,
-          cs * 0.2,
-          -cs * 0.2,
-          -cs * 0.2,
-          -cs * 0.25,
-          cs * 0.2,
-          -cs * 0.25,
-        ];
-      case Direction.down:
-        return [
-          -cs * 0.2,
-          cs * 0.2,
-          cs * 0.2,
-          cs * 0.2,
-          -cs * 0.2,
-          cs * 0.25,
-          cs * 0.2,
-          cs * 0.25,
-        ];
-    }
+  /// 各方向的眼部偏移（单位：格），顺序为左眼、右眼、左瞳、右瞳的 x/y。
+  static const Map<Direction, List<double>> _eyeTable = {
+    Direction.right: [0.2, -0.2, 0.2, 0.2, 0.25, -0.2, 0.25, 0.2],
+    Direction.left: [-0.2, -0.2, -0.2, 0.2, -0.25, -0.2, -0.25, 0.2],
+    Direction.up: [-0.2, -0.2, 0.2, -0.2, -0.2, -0.25, 0.2, -0.25],
+    Direction.down: [-0.2, 0.2, 0.2, 0.2, -0.2, 0.25, 0.2, 0.25],
+  };
+
+  List<double> _eyeOffsets(Direction dir) => _eyeTable[dir]!;
+
+  /// 把查表中的格单位偏移换算成像素偏移。
+  Offset _scaled(List<double> offsets, int index) {
+    return Offset(offsets[index] * cellSize, offsets[index + 1] * cellSize);
   }
 }
