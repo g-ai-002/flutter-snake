@@ -17,6 +17,9 @@
 - ⏱️ 开局 3-2-1-GO 倒计时
 - 📊 游戏结束结算 overlay（再来一局）
 - 🎮 经典贪吃蛇玩法：移动、吃食物、增长、碰撞检测
+- 🕹️ 三种玩法：经典 / 穿墙 / 限时挑战（60 秒抢分，吃食物加时）
+- ⚡ 连击倍率：2.5 秒内连续吃到食物，得分按连击递增（最高 5 倍）
+- 🥇 成就系统：15 个成就、进度条与累计统计，跨局持久化
 - 🧱 关卡与障碍：边墙、立柱阵、十字回廊、回字迷宫
 - 🌀 传送门：成对入口/出口，瞬间穿越棋盘
 - 🎨 皮肤系统：经典 / 像素 / 霓虹 / 糖果，支持切换
@@ -34,17 +37,17 @@
 
 ## 下载
 
-### v0.10.1（当前版本）
+### v0.11.0（当前版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1)
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0)
 - [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/debug/)（首次需手动运行一次
   `Build & Release` 工作流；之后每个 `v*` tag 会生成独立的 `v<版本>/` 目录）
 
 ### 历史版本
 
-- [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0) | [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0) | [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0)
-- 更早版本（v0.5.0 及以前）：[v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.10.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1) | [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0) | [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0) | [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0)
+- 更早版本（v0.6.0 及以前）：[v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
@@ -85,7 +88,7 @@ flutter create --platforms=web --project-name flutter_snake .
 flutter run -d chrome
 ```
 
-发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.10.1/`、`v0.10.0/` …），
+发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.11.0/`、`v0.10.1/` …），
 非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
 
 ### 发布
@@ -94,8 +97,8 @@ flutter run -d chrome
 Windows ZIP，并在对应平台自动创建 Release：
 
 ```bash
-git tag v0.10.1
-git push origin v0.10.1
+git tag v0.11.0
+git push origin v0.11.0
 ```
 
 构建产物的版本号取自 `pubspec.yaml` 的 `version` 字段，标签版本号优先；应用内展示的版本号
@@ -116,11 +119,15 @@ git push origin v0.10.1
 
 - `lib/game/snake_game.dart`：游戏编排（主循环、状态流转、overlay）
 - `lib/game/camera_rig.dart`：相机对齐、缩放脉冲与抖动
-- `lib/game/feedback_controller.dart`：闪屏、慢动作与连吃计时
+- `lib/game/feedback_controller.dart`：闪屏与慢动作
 - `lib/game/countdown_controller.dart`：开局 3-2-1-GO 倒计时
 - `lib/game/power_up_manager.dart` / `lib/game/food_spawner.dart`：道具规则与食物生成
-- `lib/providers/game_provider.dart`：游戏规则与持久化
+- `lib/game/combo_tracker.dart`：连击窗口与得分倍率
+- `lib/providers/game_provider.dart`：游戏规则、模式与持久化
+- `lib/models/game_mode.dart` / `lib/models/achievement.dart`：玩法模式与成就定义
+- `lib/services/stats_service.dart`：玩家统计与成就解锁
 - `lib/pages/widgets/game_hud.dart`：悬浮在画布上的 HUD
+- `lib/pages/achievements_page.dart`：成就进度页
 
 ## 许可证
 
