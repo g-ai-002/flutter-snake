@@ -3,6 +3,22 @@ import 'power_up.dart';
 
 enum Direction { up, down, left, right }
 
+extension DirectionInfo on Direction {
+  /// 反方向，用于拦截掉头输入。
+  Direction get opposite {
+    switch (this) {
+      case Direction.up:
+        return Direction.down;
+      case Direction.down:
+        return Direction.up;
+      case Direction.left:
+        return Direction.right;
+      case Direction.right:
+        return Direction.left;
+    }
+  }
+}
+
 enum GameStatus { idle, playing, paused, over }
 
 class Point {
@@ -10,6 +26,9 @@ class Point {
   final int y;
 
   const Point(this.x, this.y);
+
+  /// 曼哈顿距离，用于磁铁吸附范围判定。
+  int manhattanTo(Point other) => (x - other.x).abs() + (y - other.y).abs();
 
   Point move(Direction dir) {
     switch (dir) {

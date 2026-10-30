@@ -9,26 +9,25 @@ import '../services/audio_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
 import '../services/storage_service.dart';
+import 'food_spawner.dart';
+import 'power_up_manager.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
-  final Random _random;
+  final FoodSpawner _foodSpawner;
+  final PowerUpManager _powerUps = PowerUpManager();
   final bool audioEnabled;
   GameState _state;
   Direction _nextDirection = Direction.right;
   bool _directionLocked = false;
   LevelType _level = LevelType.open;
 
-  final Map<PowerUpType, ActiveEffect> _effects = {};
-  int _shieldCharges = 0;
-  double _effectNotifyTimer = 0;
-
   /// [audioEnabled] 为 false 时不触碰音频插件，便于无音频环境与单元测试。
   GameProvider(
     this._storage, {
     Random? random,
     this.audioEnabled = true,
-  })  : _random = random ?? Random(),
+  })  : _foodSpawner = FoodSpawner(random: random),
         _state = GameState(
           snake: Snake(
             body: [
@@ -50,28 +49,17 @@ class GameProvider extends ChangeNotifier {
   /// 当前选择的关卡，下一局生效。
   LevelType get level => _level;
 
-  List<ActiveEffect> get activeEffects => _effects.values.toList();
-  bool hasEffect(PowerUpType type) => _effects.containsKey(type);
-  bool get hasShield => _shieldCharges > 0;
+  Iterable<ActiveEffect> get activeEffects => _powerUps.effects;
+  bool hasEffect(PowerUpType type) => _powerUps.has(type);
+  bool get hasShield => _powerUps.hasShield;
 
   /// 当前生效速度（含加速/减速道具）。
-  int get effectiveSpeedMs {
-    if (_effects.containsKey(PowerUpType.speedUp)) {
-      return max(60, (_state.speedMs * 0.65).round());
-    }
-    if (_effects.containsKey(PowerUpType.slowDown)) {
-      return min(600, (_state.speedMs * 1.5).round());
-    }
-    return _state.speedMs;
-  }
+  int get effectiveSpeedMs => _powerUps.effectiveSpeedMs(_state.speedMs);
 
   void changeDirection(Direction dir) {
     if (_directionLocked) return;
     if (_state.status != GameStatus.playing) return;
-
-    final current = _state.snake.direction;
-    final opposite = _opposite(current);
-    if (dir == opposite) return;
+    if (dir == _state.snake.direction.opposite) return;
 
     _nextDirection = dir;
     _directionLocked = true;
@@ -82,60 +70,15 @@ class GameProvider extends ChangeNotifier {
     _directionLocked = false;
   }
 
-  Direction _opposite(Direction d) {
-    switch (d) {
-      case Direction.up:
-        return Direction.down;
-      case Direction.down:
-        return Direction.up;
-      case Direction.left:
-        return Direction.right;
-      case Direction.right:
-        return Direction.left;
-    }
-  }
-
   /// 激活一个道具效果（也用于测试）。
   void activatePowerUp(PowerUpType type) {
-    _activate(type);
+    _powerUps.activate(type);
     notifyListeners();
-  }
-
-  void _activate(PowerUpType type) {
-    if (type == PowerUpType.speedUp) {
-      _effects.remove(PowerUpType.slowDown);
-    } else if (type == PowerUpType.slowDown) {
-      _effects.remove(PowerUpType.speedUp);
-    }
-    _effects[type] = ActiveEffect(
-      type: type,
-      total: type.durationSeconds,
-    );
-    if (type == PowerUpType.shield) {
-      _shieldCharges = 1;
-    }
-    _effectNotifyTimer = 0;
   }
 
   /// 推进道具效果计时，由游戏循环按真实帧时间调用；暂停/倒计时时冻结。
   void updateEffects(double dt) {
-    if (_effects.isEmpty) return;
-
-    var changed = false;
-    for (final effect in _effects.values.toList()) {
-      effect.remaining -= dt;
-      if (effect.remaining <= 0) {
-        _effects.remove(effect.type);
-        if (effect.type == PowerUpType.shield) {
-          _shieldCharges = 0;
-        }
-        changed = true;
-      }
-    }
-
-    _effectNotifyTimer += dt;
-    if (changed || _effectNotifyTimer >= 0.2) {
-      _effectNotifyTimer = 0;
+    if (_powerUps.update(dt)) {
       notifyListeners();
     }
   }
@@ -143,9 +86,7 @@ class GameProvider extends ChangeNotifier {
   void start() {
     final w = _state.boardWidth;
     final h = _state.boardHeight;
-    final center = w ~/ 2;
-    final mid = h ~/ 2;
-    startWithLayout(_buildLayout(w, h, center, mid));
+    startWithLayout(_buildLayout(w, h, w ~/ 2, h ~/ 2));
   }
 
   /// 使用指定布局开局，供自定义关卡与测试使用。
@@ -161,12 +102,15 @@ class GameProvider extends ChangeNotifier {
       Point(center, mid),
     ];
 
-    _effects.clear();
-    _shieldCharges = 0;
-    _effectNotifyTimer = 0;
+    _powerUps.clear();
     _state = GameState(
       snake: Snake(body: body),
-      food: _randomFood(w, h, body, layout),
+      food: _foodSpawner.spawn(
+        columns: w,
+        rows: h,
+        occupied: body,
+        layout: layout,
+      ),
       status: GameStatus.playing,
       highScore: _state.highScore,
       boardWidth: w,
@@ -246,10 +190,7 @@ class GameProvider extends ChangeNotifier {
     }
 
     if (_isCollision(newHead, snake)) {
-      if (_shieldCharges > 0) {
-        _shieldCharges = 0;
-        _effects.remove(PowerUpType.shield);
-        _effectNotifyTimer = 0;
+      if (_powerUps.consumeShield()) {
         if (audioEnabled) {
           AudioService().playShieldBreak();
         }
@@ -262,16 +203,16 @@ class GameProvider extends ChangeNotifier {
     }
 
     final food = _state.food;
-    final magnet = _effects.containsKey(PowerUpType.magnet);
     final ate = newHead == food.position ||
-        (magnet && _isNear(newHead, food.position));
+        (_powerUps.has(PowerUpType.magnet) &&
+            newHead.manhattanTo(food.position) <= 1);
 
     final newBody = List<Point>.from(snake.body)..add(newHead);
     if (!ate) {
       newBody.removeAt(0);
     }
 
-    final gain = _effects.containsKey(PowerUpType.doubleScore) ? 20 : 10;
+    final gain = _powerUps.has(PowerUpType.doubleScore) ? 20 : 10;
     final newScore = ate ? _state.score + gain : _state.score;
     final previousHighScore = _state.highScore;
     final newHighScore =
@@ -279,11 +220,11 @@ class GameProvider extends ChangeNotifier {
 
     Food newFood = food;
     if (ate) {
-      newFood = _randomFood(
-        _state.boardWidth,
-        _state.boardHeight,
-        newBody,
-        _state.layout,
+      newFood = _foodSpawner.spawn(
+        columns: _state.boardWidth,
+        rows: _state.boardHeight,
+        occupied: newBody,
+        layout: _state.layout,
       );
       if (food.type == null) {
         LogService.info('吃到食物, 得分: $newScore');
@@ -291,7 +232,7 @@ class GameProvider extends ChangeNotifier {
           AudioService().playEat();
         }
       } else {
-        _activate(food.type!);
+        _powerUps.activate(food.type!);
         LogService.info('拾取道具: ${food.type!.label}, 得分: $newScore');
         if (audioEnabled) {
           AudioService().playPowerUp();
@@ -311,10 +252,6 @@ class GameProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-  }
-
-  bool _isNear(Point a, Point b) {
-    return (a.x - b.x).abs() + (a.y - b.y).abs() <= 1;
   }
 
   bool _isCollision(Point head, Snake snake) {
@@ -340,50 +277,11 @@ class GameProvider extends ChangeNotifier {
     if (newHighScore > _state.highScore) {
       _storage.setHighScore(newHighScore);
     }
-    _effects.clear();
-    _shieldCharges = 0;
-    _effectNotifyTimer = 0;
+    _powerUps.clear();
     _state = _state.copyWith(
       status: GameStatus.over,
       highScore: newHighScore,
     );
     notifyListeners();
-  }
-
-  Food _randomFood(
-    int w,
-    int h,
-    List<Point> occupied,
-    LevelLayout layout,
-  ) {
-    final occupiedSet = <Point>{
-      ...occupied,
-      ...layout.walls,
-      ...layout.portals.keys,
-    };
-    final available = <Point>[];
-    for (var x = 0; x < w; x++) {
-      for (var y = 0; y < h; y++) {
-        final p = Point(x, y);
-        if (!occupiedSet.contains(p)) {
-          available.add(p);
-        }
-      }
-    }
-
-    final type = _random.nextDouble() < 0.28
-        ? PowerUpType.values[_random.nextInt(PowerUpType.values.length)]
-        : null;
-
-    if (available.isEmpty) {
-      return Food(
-        Point(_random.nextInt(w), _random.nextInt(h)),
-        type: type,
-      );
-    }
-    return Food(
-      available[_random.nextInt(available.length)],
-      type: type,
-    );
   }
 }
