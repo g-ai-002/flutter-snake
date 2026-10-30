@@ -426,7 +426,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     _snake.snapToCurrent();
     _feedback.triggerDeath();
     world.timeScale = _feedback.timeScale;
-    _camera.pulse(strength: 0.06);
+    _camera.pulse();
     _camera.shake();
     _gameOverOverlayPending = true;
     _gameOverOverlayTimer = _gameOverOverlayDelay;

@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../game/food_spawner.dart';
+import '../game/power_up_manager.dart';
 import '../models/game_state.dart';
 import '../models/level.dart';
 import '../models/power_up.dart';
@@ -9,8 +11,6 @@ import '../services/audio_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
 import '../services/storage_service.dart';
-import 'food_spawner.dart';
-import 'power_up_manager.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
