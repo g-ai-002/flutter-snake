@@ -36,6 +36,21 @@
 
 ## 版本历史
 
+### v0.10.1 (PATCH)
+
+- **状态**: 开发完成 ✅
+- **目标**: 重构优化存量代码，拆分上帝类、清理死代码、补齐核心单元测试
+- **任务**:
+  - [x] 拆分 `SnakeGame`：相机装置 `CameraRig`、视觉反馈 `FeedbackController`、倒计时 `CountdownController`
+  - [x] 拆分 `GameProvider`：道具管理 `PowerUpManager`、食物生成 `FoodSpawner`
+  - [x] 方向/坐标工具下沉到模型层（`Direction.opposite`、`Point.manhattanTo`）
+  - [x] 拆分 `GamePage` HUD 到 `GameHud` 组件，页面只负责生命周期与画布
+  - [x] 清理死代码：`AppConstants` 重复的棋盘/速度表，`StorageService` 重复 try-catch
+  - [x] 渲染与每帧分配优化：眼部偏移查表、缓存皮肤色、道具列表零拷贝
+  - [x] 新增单元测试：道具管理、食物生成、倒计时、反馈控制器
+  - [x] 版本号 0.10.0 → 0.10.1
+  - [x] 更新 README/plan/versions
+
 ### v0.10.0 (MINOR)
 
 - **状态**: 已发布 ✅
