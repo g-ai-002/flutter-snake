@@ -2,21 +2,16 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flame/game.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../game/overlays/countdown_overlay.dart';
 import '../game/overlays/game_over_overlay.dart';
 import '../game/overlays/pause_overlay.dart';
-import '../game/power_up_style.dart';
 import '../game/snake_game.dart';
-import '../models/game_state.dart';
-import '../models/level.dart';
-import '../models/power_up.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
-import '../utils/game_hints.dart';
+import 'widgets/game_hud.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -34,6 +29,9 @@ class _GamePageState extends State<GamePage> {
 
   /// 横屏时左右留给 HUD 的宽度。
   static const double _landscapeReserve = 160;
+
+  /// 开局提示的展示时长。
+  static const Duration _hintDuration = Duration(seconds: 6);
 
   final GlobalKey _pageKey = GlobalKey();
   final FocusNode _gameFocusNode = FocusNode(
@@ -79,7 +77,7 @@ class _GamePageState extends State<GamePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       provider.start();
-      _showHintFor(const Duration(seconds: 6));
+      _showHintFor(_hintDuration);
       _gameFocusNode.requestFocus();
     });
   }
@@ -133,6 +131,16 @@ class _GamePageState extends State<GamePage> {
     return math.max(0, maxSide);
   }
 
+  void _resumeGame(SnakeGame game) {
+    game.provider.togglePause();
+    _gameFocusNode.requestFocus();
+  }
+
+  void _restartGame(SnakeGame game) {
+    game.provider.start();
+    _gameFocusNode.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final game = _game;
@@ -143,7 +151,7 @@ class _GamePageState extends State<GamePage> {
     return Scaffold(
       appBar: AppBar(
         title: Consumer<GameProvider>(
-          builder: (context, game, _) => Text('得分: ${game.state.score}'),
+          builder: (context, provider, _) => Text('得分: ${provider.state.score}'),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -151,14 +159,14 @@ class _GamePageState extends State<GamePage> {
         ),
         actions: [
           Consumer<GameProvider>(
-            builder: (context, game, _) {
-              if (!game.isPlaying && !game.isPaused) {
+            builder: (context, provider, _) {
+              if (!provider.isPlaying && !provider.isPaused) {
                 return const SizedBox.shrink();
               }
               return IconButton(
-                icon: Icon(game.isPaused ? Icons.play_arrow : Icons.pause),
-                tooltip: game.isPaused ? '继续' : '暂停',
-                onPressed: game.togglePause,
+                icon: Icon(provider.isPaused ? Icons.play_arrow : Icons.pause),
+                tooltip: provider.isPaused ? '继续' : '暂停',
+                onPressed: provider.togglePause,
               );
             },
           ),
@@ -178,273 +186,42 @@ class _GamePageState extends State<GamePage> {
                 overlayBuilderMap: {
                   SnakeGame.pauseOverlayId: (_, SnakeGame game) => PauseOverlay(
                         provider: game.provider,
-                        onResume: () {
-                          game.provider.togglePause();
-                          _gameFocusNode.requestFocus();
-                        },
+                        onResume: () => _resumeGame(game),
                       ),
                   SnakeGame.countdownOverlayId: (_, SnakeGame game) =>
                       CountdownOverlay(countdown: game.countdown),
                   SnakeGame.gameOverOverlayId: (_, SnakeGame game) =>
                       GameOverOverlay(
                         provider: game.provider,
-                        onRestart: () {
-                          game.provider.start();
-                          _gameFocusNode.requestFocus();
-                        },
+                        onRestart: () => _restartGame(game),
                       ),
                 },
               ),
             ),
-            // HUD 悬浮在画布之上；不接收点击的区域放行给 Flame 手势。
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final size = constraints.biggest;
                   final landscape = size.width > size.height;
                   final side = _boardSide(size, landscape);
-                  final boardLeft = (size.width - side) / 2;
-                  final boardTop = (size.height - side) / 2;
-                  return Stack(
-                    children: [
-                      Positioned.fromRect(
-                        rect: Rect.fromLTWH(boardLeft, boardTop, side, side),
-                        child: _BoardSlot(
-                          pageKey: _pageKey,
-                          onRect: _handleBoardRect,
-                        ),
-                      ),
-                      // 道具效果贴住棋盘上沿。
-                      Positioned(
-                        top: boardTop + 8,
-                        left: boardLeft + 8,
-                        width: math.max(0, side - 16),
-                        child: IgnorePointer(child: _buildEffects()),
-                      ),
-                      if (!landscape) ...[
-                        Positioned(
-                          top: math.max(4, boardTop - 40),
-                          left: 16,
-                          right: 16,
-                          child: IgnorePointer(child: _buildStatus()),
-                        ),
-                        Positioned(
-                          top: boardTop + side + 12,
-                          left: 16,
-                          right: 16,
-                          child: _buildHint(),
-                        ),
-                      ] else ...[
-                        Positioned(
-                          left: 12,
-                          top: 0,
-                          bottom: 0,
-                          width: math.max(0, boardLeft - 24),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: IgnorePointer(
-                              child: _buildStatus(vertical: true),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 12,
-                          top: 0,
-                          bottom: 0,
-                          width: math.max(
-                            0,
-                            size.width - boardLeft - side - 24,
-                          ),
-                          child: Center(child: _buildHint()),
-                        ),
-                      ],
-                    ],
+                  return GameHud(
+                    pageKey: _pageKey,
+                    canvasSize: size,
+                    boardRect: Rect.fromLTWH(
+                      (size.width - side) / 2,
+                      (size.height - side) / 2,
+                      side,
+                      side,
+                    ),
+                    landscape: landscape,
+                    showHint: _showHint,
+                    onBoardRect: _handleBoardRect,
                   );
                 },
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatus({bool vertical = false}) {
-    return Consumer<GameProvider>(
-      builder: (context, game, _) {
-        final state = game.state;
-        final colorScheme = Theme.of(context).colorScheme;
-        final items = <Widget>[
-          Text(
-            '最高分: ${state.highScore}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          Text(
-            '关卡: ${game.level.label}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-          ),
-          if (state.status == GameStatus.over)
-            Text(
-              '游戏结束',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-        ];
-        if (vertical) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final item in items)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: item,
-                ),
-            ],
-          );
-        }
-        return Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 4,
-          children: items,
-        );
-      },
-    );
-  }
-
-  Widget _buildHint() {
-    return Consumer<GameProvider>(
-      builder: (context, game, _) {
-        final status = game.state.status;
-        if (status == GameStatus.playing && !_showHint) {
-          return const SizedBox.shrink();
-        }
-        if (status == GameStatus.playing || status == GameStatus.paused) {
-          return SizedBox(
-            height: 60,
-            child: Center(
-              child: IgnorePointer(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    GameHints.inGame,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-        if (status == GameStatus.idle) {
-          return ElevatedButton.icon(
-            onPressed: game.start,
-            icon: const Icon(Icons.replay),
-            label: const Text('重新开始'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(180, 44),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
-
-  Widget _buildEffects() {
-    return Consumer<GameProvider>(
-      builder: (context, game, _) {
-        final effects = game.activeEffects;
-        if (effects.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          alignment: WrapAlignment.center,
-          children: effects.map((effect) => _EffectChip(effect: effect)).toList(),
-        );
-      },
-    );
-  }
-}
-
-/// 只用于占位的棋盘槽位：把自身在游戏页中的矩形回报给 Flame 相机。
-class _BoardSlot extends StatefulWidget {
-  const _BoardSlot({required this.pageKey, required this.onRect});
-
-  final GlobalKey pageKey;
-  final ValueChanged<Rect> onRect;
-
-  @override
-  State<_BoardSlot> createState() => _BoardSlotState();
-}
-
-class _BoardSlotState extends State<_BoardSlot> {
-  final GlobalKey _slotKey = GlobalKey();
-  Rect? _lastRect;
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reportRect());
-    return SizedBox.expand(key: _slotKey);
-  }
-
-  void _reportRect() {
-    if (!mounted) return;
-    final pageBox = widget.pageKey.currentContext?.findRenderObject();
-    final slotBox = _slotKey.currentContext?.findRenderObject();
-    if (pageBox is! RenderBox || slotBox is! RenderBox) return;
-    if (!pageBox.hasSize || !slotBox.hasSize || slotBox.size.isEmpty) return;
-
-    final rect =
-        slotBox.localToGlobal(Offset.zero, ancestor: pageBox) & slotBox.size;
-    if (rect == _lastRect) return;
-    _lastRect = rect;
-    widget.onRect(rect);
-  }
-}
-
-class _EffectChip extends StatelessWidget {
-  const _EffectChip({required this.effect});
-
-  final ActiveEffect effect;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = powerUpColor(effect.type);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(powerUpIcon(effect.type), size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            '${effect.type.label} ${effect.remaining.ceil()}s',
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
