@@ -9,12 +9,16 @@ import '../game/overlays/countdown_overlay.dart';
 import '../game/overlays/game_over_overlay.dart';
 import '../game/overlays/pause_overlay.dart';
 import '../game/snake_game.dart';
+import '../models/daily_challenge.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import 'widgets/game_hud.dart';
 
 class GamePage extends StatefulWidget {
-  const GamePage({super.key});
+  const GamePage({super.key, this.dailyChallenge});
+
+  /// 非空时进入每日挑战，忽略设置页的关卡/模式/棋盘/速度。
+  final DailyChallenge? dailyChallenge;
 
   @override
   State<GamePage> createState() => _GamePageState();
@@ -58,10 +62,17 @@ class _GamePageState extends State<GamePage> {
 
     final provider = context.read<GameProvider>();
     final settings = context.read<SettingsProvider>();
-    provider.updateLevel(settings.level);
-    provider.updateBoardSize(settings.boardSize);
-    provider.updateSpeed(settings.speed);
-    provider.updateMode(settings.mode);
+    final daily = widget.dailyChallenge;
+    if (daily == null) {
+      provider.exitDaily();
+      provider.updateLevel(settings.level);
+      provider.updateBoardSize(settings.boardSize);
+      provider.updateSpeed(settings.speed);
+      provider.updateMode(settings.mode);
+    } else {
+      // 在构建画布前同步棋盘尺寸，避免首帧按旧尺寸布局。
+      provider.prepareDaily(daily);
+    }
 
     final colors = Theme.of(context).colorScheme;
     _game = SnakeGame(
@@ -188,16 +199,20 @@ class _GamePageState extends State<GamePage> {
                 game: game,
                 focusNode: _gameFocusNode,
                 overlayBuilderMap: {
-                  SnakeGame.pauseOverlayId: (_, SnakeGame game) => PauseOverlay(
-                    provider: game.provider,
-                    onResume: () => _resumeGame(game),
-                  ),
+                  SnakeGame.pauseOverlayId: (context, SnakeGame game) =>
+                      PauseOverlay(
+                        provider: game.provider,
+                        onResume: () => _resumeGame(game),
+                        onRestart: () => _restartGame(game),
+                        onExit: () => Navigator.pop(context),
+                      ),
                   SnakeGame.countdownOverlayId: (_, SnakeGame game) =>
                       CountdownOverlay(countdown: game.countdown),
-                  SnakeGame.gameOverOverlayId: (_, SnakeGame game) =>
+                  SnakeGame.gameOverOverlayId: (context, SnakeGame game) =>
                       GameOverOverlay(
                         provider: game.provider,
                         onRestart: () => _restartGame(game),
+                        onExit: () => Navigator.pop(context),
                       ),
                 },
               ),

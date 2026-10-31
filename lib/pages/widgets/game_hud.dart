@@ -135,6 +135,8 @@ typedef _StatusSnapshot = ({
   int combo,
   GameStatus status,
   GameOverReason reason,
+  bool daily,
+  int dailyBest,
 });
 
 /// 最高分、关卡与结束状态。
@@ -155,6 +157,8 @@ class _StatusLine extends StatelessWidget {
         combo: game.combo,
         status: state.status,
         reason: state.overReason,
+        daily: game.isDaily,
+        dailyBest: game.todayBest,
       );
     });
     final colorScheme = Theme.of(context).colorScheme;
@@ -168,15 +172,25 @@ class _StatusLine extends StatelessWidget {
         ),
       ),
       Text(
-        '模式: ${snapshot.mode}',
-        style: Theme.of(context).textTheme.bodyMedium
-            ?.copyWith(color: colorScheme.onSurfaceVariant),
+        snapshot.daily ? '每日挑战 · ${snapshot.mode}' : '模式: ${snapshot.mode}',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: snapshot.daily
+              ? colorScheme.tertiary
+              : colorScheme.onSurfaceVariant,
+          fontWeight: snapshot.daily ? FontWeight.w600 : null,
+        ),
       ),
       Text(
         '关卡: ${snapshot.level}',
         style: Theme.of(context).textTheme.bodyMedium
             ?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
+      if (snapshot.daily)
+        Text(
+          '今日最佳: ${snapshot.dailyBest}',
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
       if (remaining != null)
         Text(
           '剩余: ${remaining}s',

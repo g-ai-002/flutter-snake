@@ -1,3 +1,4 @@
+import 'daily_challenge.dart';
 import 'game_mode.dart';
 import 'level.dart';
 import 'power_up.dart';
@@ -107,6 +108,9 @@ class GameState {
   final double remainingSeconds;
   final GameOverReason overReason;
 
+  /// 非空表示本局是每日挑战，结算时按挑战日期记录成绩。
+  final DailyChallenge? daily;
+
   GameState({
     required this.snake,
     required this.food,
@@ -121,6 +125,7 @@ class GameState {
     this.mode = GameMode.classic,
     this.remainingSeconds = 0,
     this.overReason = GameOverReason.collision,
+    this.daily,
   });
 
   GameState copyWith({
@@ -137,6 +142,7 @@ class GameState {
     GameMode? mode,
     double? remainingSeconds,
     GameOverReason? overReason,
+    DailyChallenge? daily,
   }) {
     return GameState(
       snake: snake ?? this.snake,
@@ -152,6 +158,7 @@ class GameState {
       mode: mode ?? this.mode,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       overReason: overReason ?? this.overReason,
+      daily: daily ?? this.daily,
     );
   }
 }

@@ -7,12 +7,14 @@ import '../game/combo_tracker.dart';
 import '../game/food_spawner.dart';
 import '../game/power_up_manager.dart';
 import '../models/achievement.dart';
+import '../models/daily_challenge.dart';
 import '../models/game_mode.dart';
 import '../models/game_state.dart';
 import '../models/level.dart';
 import '../models/player_stats.dart';
 import '../models/power_up.dart';
 import '../services/audio_service.dart';
+import '../services/daily_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/log_service.dart';
 import '../services/stats_service.dart';
@@ -21,7 +23,8 @@ import '../utils/game_rules.dart';
 
 class GameProvider extends ChangeNotifier {
   final StorageService _storage;
-  final FoodSpawner _foodSpawner;
+  final FoodSpawner Function(int seed) _spawnerFactory;
+  FoodSpawner _foodSpawner;
   final PowerUpManager _powerUps = PowerUpManager();
   final ComboTracker _combo = ComboTracker();
   final bool audioEnabled;
@@ -30,17 +33,23 @@ class GameProvider extends ChangeNotifier {
   bool _directionLocked = false;
   LevelType _level = LevelType.open;
   GameMode _mode = GameMode.classic;
+  DailyChallenge? _daily;
+  DailyResult? _dailyResult;
   int _foodEaten = 0;
   int _lastTimeDisplay = 0;
   List<AchievementId> _lastUnlocked = const <AchievementId>[];
 
   /// [audioEnabled] 为 false 时不触碰音频插件，便于无音频环境与单元测试。
+  /// [foodSpawner] 注入后每日挑战也复用同一个生成器，方便测试固定食物序列。
   GameProvider(
     this._storage, {
     Random? random,
     FoodSpawner? foodSpawner,
     this.audioEnabled = true,
-  }) : _foodSpawner = foodSpawner ?? FoodSpawner(random: random),
+  }) : _spawnerFactory = foodSpawner == null
+           ? ((seed) => FoodSpawner(random: Random(seed)))
+           : ((_) => foodSpawner),
+       _foodSpawner = foodSpawner ?? FoodSpawner(random: random),
        _state = GameState(
          snake: Snake(
            body: [
@@ -74,6 +83,31 @@ class GameProvider extends ChangeNotifier {
 
   /// 最近一局新解锁的成就，开局时清空。
   List<AchievementId> get lastUnlocked => _lastUnlocked;
+
+  /// 当前对局是否为每日挑战。
+  bool get isDaily => _daily != null;
+
+  /// 当前每日挑战的排期；普通对局为 null。
+  DailyChallenge? get daily => _daily;
+
+  /// 最近一次每日挑战的结算摘要，普通对局为 null。
+  DailyResult? get dailyResult => _dailyResult;
+
+  /// 今天的每日挑战排期。
+  DailyChallenge get todayChallenge => DailyChallenge.forDate(DateTime.now());
+
+  int get todayBest => DailyService.instance.bestFor(todayChallenge.dateKey);
+
+  /// 今天是否已经完成过一次每日挑战（0 分也算完成）。
+  bool get playedToday => DailyService.instance.played(todayChallenge.dateKey);
+
+  /// 连续挑战天数；今天尚未挑战时从昨天开始数。
+  int get dailyStreak =>
+      DailyService.instance.streakUntil(todayChallenge.dateKey);
+
+  int get dailyBestEver => DailyService.instance.historicalBest;
+
+  int get dailyPlayedDays => DailyService.instance.playedDays;
 
   PlayerStats get stats => StatsService.instance.stats;
 
@@ -137,12 +171,56 @@ class GameProvider extends ChangeNotifier {
   }
 
   void start() {
-    startWithLayout(_buildLayout(_state.boardWidth, _state.boardHeight));
+    _dailyResult = null;
+    final daily = _daily;
+    if (daily == null) {
+      startWithLayout(_buildLayout(_state.boardWidth, _state.boardHeight));
+      return;
+    }
+    // 重开每日挑战时重置种子，保证同一局排期内食物序列可复现。
+    _foodSpawner = _spawnerFactory(daily.seed);
+    _state = _state.copyWith(
+      boardWidth: daily.boardSize,
+      boardHeight: daily.boardSize,
+      speedMs: daily.speedMs,
+    );
+    startWithLayout(_buildLayout(daily.boardSize, daily.boardSize));
+  }
+
+  /// 预置每日挑战规则但不开始，供游戏页在构建画布前同步棋盘尺寸。
+  void prepareDaily(DailyChallenge challenge) {
+    _daily = challenge;
+    _dailyResult = null;
+    _level = challenge.level;
+    _mode = challenge.mode;
+    _foodSpawner = _spawnerFactory(challenge.seed);
+    _state = _state.copyWith(
+      boardWidth: challenge.boardSize,
+      boardHeight: challenge.boardSize,
+      speedMs: challenge.speedMs,
+    );
+  }
+
+  /// 开始今天的每日挑战：规则、棋盘与种子都由 [challenge] 决定。
+  void startDaily(DailyChallenge challenge) {
+    prepareDaily(challenge);
+    startWithLayout(_buildLayout(challenge.boardSize, challenge.boardSize));
+  }
+
+  /// 退出每日挑战，下一次 [start] 恢复按设置页规则开局。
+  ///
+  /// 不主动通知：调用方紧接着会写入新规则并开局，避免在构建期间触发重建。
+  void exitDaily() {
+    if (_daily == null) return;
+    _daily = null;
+    _dailyResult = null;
   }
 
   /// 使用指定布局开局，供自定义关卡与测试使用。
   void startWithLayout(LevelLayout layout) {
-    LogService.info('游戏开始, 关卡: ${_level.label}, 模式: ${_mode.label}');
+    final daily = _daily;
+    final prefix = daily == null ? '' : '每日挑战 ${daily.dateKey} ';
+    LogService.info('$prefix游戏开始, 关卡: ${_level.label}, 模式: ${_mode.label}');
     final w = _state.boardWidth;
     final h = _state.boardHeight;
     final center = w ~/ 2;
@@ -175,6 +253,7 @@ class GameProvider extends ChangeNotifier {
       layout: layout,
       mode: _mode,
       remainingSeconds: _mode.initialSeconds ?? 0,
+      daily: daily,
     );
     _nextDirection = Direction.right;
     _directionLocked = false;
@@ -388,6 +467,10 @@ class GameProvider extends ChangeNotifier {
       AudioService().playGameOver();
     }
     unawaited(LeaderboardService.addScore(_state.score));
+    final daily = _daily;
+    if (daily != null) {
+      _dailyResult = DailyService.instance.record(daily.dateKey, _state.score);
+    }
     final newHighScore = _state.score > _state.highScore
         ? _state.score
         : _state.highScore;

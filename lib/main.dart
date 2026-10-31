@@ -7,6 +7,7 @@ import 'pages/home_page.dart';
 import 'providers/game_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/audio_service.dart';
+import 'services/daily_service.dart';
 import 'services/log_service.dart';
 import 'services/logging_init.dart';
 import 'services/stats_service.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
   final storage = await StorageService.instance;
   await initLogging();
   await StatsService.instance.load();
+  await DailyService.instance.load();
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
   runApp(SnakeApp(storage: storage));

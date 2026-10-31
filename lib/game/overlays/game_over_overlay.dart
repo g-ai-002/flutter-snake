@@ -6,12 +6,20 @@ import '../../providers/game_provider.dart';
 
 /// 游戏结束结算遮罩。
 class GameOverOverlay extends StatelessWidget {
-  const GameOverOverlay({super.key, required this.provider, this.onRestart});
+  const GameOverOverlay({
+    super.key,
+    required this.provider,
+    this.onRestart,
+    this.onExit,
+  });
 
   final GameProvider provider;
 
   /// 再来一局后的回调，用于把键盘焦点交还棋盘。
   final VoidCallback? onRestart;
+
+  /// 返回主页。
+  final VoidCallback? onExit;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +56,9 @@ class GameOverOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  state.mode.label,
+                  state.daily == null
+                      ? state.mode.label
+                      : '每日挑战 · ${state.daily!.weekdayLabel}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
@@ -74,6 +84,24 @@ class GameOverOverlay extends StatelessWidget {
                     color: colors.secondary,
                   ),
                 ),
+                if (provider.dailyResult != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '今日最佳 ${provider.dailyResult!.bestScore}'
+                    '  ·  连续 ${provider.dailyResult!.streak} 天',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.tertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (provider.dailyResult!.isNewBest)
+                    Text(
+                      '刷新今日最佳',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.tertiary,
+                      ),
+                    ),
+                ],
                 if (provider.lastUnlocked.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   Wrap(
@@ -107,6 +135,10 @@ class GameOverOverlay extends StatelessWidget {
                     minimumSize: const Size(180, 44),
                   ),
                 ),
+                if (onExit != null) ...[
+                  const SizedBox(height: 4),
+                  TextButton(onPressed: onExit, child: const Text('返回主页')),
+                ],
               ],
             ),
           ),
