@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'log_service.dart';
 
 class LeaderboardEntry {
@@ -9,11 +11,12 @@ class LeaderboardEntry {
   const LeaderboardEntry({required this.score, required this.date});
 
   Map<String, dynamic> toJson() => {
-        'score': score,
-        'date': date.toIso8601String(),
-      };
+    'score': score,
+    'date': date.toIso8601String(),
+  };
 
-  factory LeaderboardEntry.fromJson(Map<String, dynamic> json) => LeaderboardEntry(
+  factory LeaderboardEntry.fromJson(Map<String, dynamic> json) =>
+      LeaderboardEntry(
         score: json['score'] as int,
         date: DateTime.parse(json['date'] as String),
       );
@@ -29,7 +32,9 @@ class LeaderboardService {
     if (raw == null) return [];
     try {
       final list = jsonDecode(raw) as List;
-      return list.map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       LogService.warning('排行榜数据解析失败: $e');
       return [];
@@ -38,13 +43,20 @@ class LeaderboardService {
 
   static Future<void> addScore(int score) async {
     if (score <= 0) return;
-    final entries = await getEntries();
-    entries.add(LeaderboardEntry(score: score, date: DateTime.now()));
-    entries.sort((a, b) => b.score.compareTo(a.score));
-    final trimmed = entries.take(_maxEntries).toList();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(trimmed.map((e) => e.toJson()).toList()));
-    LogService.info('排行榜: 新增分数 $score');
+    try {
+      final entries = await getEntries();
+      entries.add(LeaderboardEntry(score: score, date: DateTime.now()));
+      entries.sort((a, b) => b.score.compareTo(a.score));
+      final trimmed = entries.take(_maxEntries).toList();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _key,
+        jsonEncode(trimmed.map((e) => e.toJson()).toList()),
+      );
+      LogService.info('排行榜: 新增分数 $score');
+    } catch (e) {
+      LogService.warning('排行榜写入失败: $e');
+    }
   }
 
   static Future<int> getHighScore() async {
