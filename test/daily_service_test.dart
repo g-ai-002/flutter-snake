@@ -71,4 +71,16 @@ void main() {
     expect(service.played(_key(first)), isFalse);
     expect(service.played(_key(first.add(const Duration(days: 69)))), isTrue);
   });
+
+  test('按月份汇总完成日期与月内最佳', () {
+    final service = DailyService.instance;
+    service.record('20261001', 30);
+    service.record('20261015', 90);
+    service.record('20261102', 120);
+
+    final keys = service.keysInMonth(DateTime(2026, 10));
+    expect(keys, <String>['20261001', '20261015']);
+    expect(service.bestInMonth(DateTime(2026, 10)), 90);
+    expect(service.bestInMonth(DateTime(2026, 12)), 0);
+  });
 }

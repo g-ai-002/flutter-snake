@@ -7,6 +7,7 @@ import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/constants.dart';
 import 'achievements_page.dart';
+import 'daily_calendar_page.dart';
 import 'game_page.dart';
 import 'leaderboard_page.dart';
 import 'settings_page.dart';
@@ -284,10 +285,21 @@ class _DailyChallengeCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 12,
-                    color: colors.onSurfaceVariant,
+                  TextButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DailyCalendarPage(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.calendar_month, size: 14),
+                    label: const Text('日历'),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
                 ],
               ),

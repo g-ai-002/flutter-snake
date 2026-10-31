@@ -54,6 +54,17 @@ class DailyService {
 
   bool played(String dateKey) => _scores.containsKey(dateKey);
 
+  /// 指定月份已完成的日期键，按日期升序，供日历按月渲染。
+  List<String> keysInMonth(DateTime month) {
+    final prefix = DailyChallenge.keyFor(DateTime(month.year, month.month))
+        .substring(0, 6);
+    return _scores.keys.where((key) => key.startsWith(prefix)).toList()..sort();
+  }
+
+  /// 指定月份的月内最佳成绩；没有记录时为 0。
+  int bestInMonth(DateTime month) =>
+      keysInMonth(month).fold(0, (best, key) => math.max(best, _scores[key]!));
+
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -28,6 +28,7 @@ void main() {
 
     expect(find.textContaining('每日挑战'), findsOneWidget);
     expect(find.text('今日尚未挑战'), findsOneWidget);
+    expect(find.text('日历'), findsOneWidget);
     expect(find.text('数据'), findsOneWidget);
     expect(find.text('开始游戏'), findsOneWidget);
   });

@@ -6,7 +6,10 @@ import '../models/game_mode.dart';
 import '../models/player_stats.dart';
 import '../providers/game_provider.dart';
 import '../services/leaderboard_service.dart';
+import '../services/share_service.dart';
 import '../utils/formatters.dart';
+import 'daily_calendar_page.dart';
+import 'widgets/section_card.dart';
 import 'widgets/stat_metric.dart';
 
 /// 数据统计页：生涯数据、每日挑战进度与排行榜摘要。
@@ -31,7 +34,16 @@ class StatsPage extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('数据统计')),
+      appBar: AppBar(
+        title: const Text('数据统计'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '分享战绩',
+            onPressed: () => _shareCareer(context, stats, daily),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -39,7 +51,7 @@ class StatsPage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                _SectionCard(
+                SectionCard(
                   icon: Icons.insights,
                   title: '生涯数据',
                   child: Wrap(
@@ -65,10 +77,19 @@ class StatsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                _SectionCard(
+                SectionCard(
                   icon: Icons.today,
                   title: '每日挑战',
                   subtitle: '今日规则：${daily.rule}',
+                  action: TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DailyCalendarPage(),
+                      ),
+                    ),
+                    child: const Text('日历'),
+                  ),
                   child: Wrap(
                     spacing: 24,
                     runSpacing: 16,
@@ -84,7 +105,7 @@ class StatsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const _SectionCard(
+                const SectionCard(
                   icon: Icons.emoji_events,
                   title: '排行榜 Top 5',
                   child: _LeaderboardPreview(),
@@ -108,6 +129,25 @@ class StatsPage extends StatelessWidget {
   static Widget _metric(String label, String value, {bool accent = false}) {
     return StatMetric(label: label, value: value, accent: accent, width: 108);
   }
+
+  /// 把生涯数据整理成纯文本复制到剪贴板。
+  static Future<void> _shareCareer(
+    BuildContext context,
+    PlayerStats stats,
+    _DailyStats daily,
+  ) async {
+    final text = ShareService.buildCareerText(
+      stats: stats,
+      achievements: AchievementCatalog.unlockedCount(stats),
+      achievementTotal: AchievementCatalog.all.length,
+      streak: daily.streak,
+      dailyBest: daily.bestEver,
+    );
+    final ok = await ShareService.copy(text);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(ok ? '战绩已复制到剪贴板' : '复制失败，请稍后再试')));
+  }
 }
 
 typedef _DailyStats = ({
@@ -118,63 +158,6 @@ typedef _DailyStats = ({
   int playedDays,
   String rule,
 });
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.icon,
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: colors.primary),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              subtitle!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
-}
 
 /// 排行榜前五名；读取失败时给出提示而不是抛错。
 class _LeaderboardPreview extends StatelessWidget {

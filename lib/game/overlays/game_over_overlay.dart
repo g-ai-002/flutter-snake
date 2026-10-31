@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/game_mode.dart';
 import '../../models/game_state.dart';
 import '../../providers/game_provider.dart';
+import '../../services/share_service.dart';
 
 /// 游戏结束结算遮罩。
 class GameOverOverlay extends StatelessWidget {
@@ -135,15 +136,41 @@ class GameOverOverlay extends StatelessWidget {
                     minimumSize: const Size(180, 44),
                   ),
                 ),
-                if (onExit != null) ...[
-                  const SizedBox(height: 4),
-                  TextButton(onPressed: onExit, child: const Text('返回主页')),
-                ],
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _copyResult(context),
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('分享战绩'),
+                    ),
+                    if (onExit != null)
+                      TextButton(onPressed: onExit, child: const Text('返回主页')),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// 把本局战绩复制到剪贴板，由用户自行粘贴分享。
+  Future<void> _copyResult(BuildContext context) async {
+    final state = provider.state;
+    final ok = await ShareService.copy(
+      ShareService.buildRunText(
+        mode: state.mode,
+        score: state.score,
+        highScore: state.highScore,
+        reasonLabel: state.overReason.label,
+        daily: state.daily,
+      ),
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(ok ? '战绩已复制到剪贴板' : '复制失败，请稍后再试')));
   }
 }
