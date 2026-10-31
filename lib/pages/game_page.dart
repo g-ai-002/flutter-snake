@@ -151,24 +151,26 @@ class _GamePageState extends State<GamePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Consumer<GameProvider>(
-          builder: (context, provider, _) =>
-              Text('得分: ${provider.state.score}'),
+        title: Selector<GameProvider, int>(
+          selector: (_, provider) => provider.state.score,
+          builder: (context, score, _) => Text('得分: $score'),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          Consumer<GameProvider>(
-            builder: (context, provider, _) {
-              if (!provider.isPlaying && !provider.isPaused) {
+          Selector<GameProvider, (bool, bool)>(
+            selector: (_, provider) => (provider.isPlaying, provider.isPaused),
+            builder: (context, status, _) {
+              final (playing, paused) = status;
+              if (!playing && !paused) {
                 return const SizedBox.shrink();
               }
               return IconButton(
-                icon: Icon(provider.isPaused ? Icons.play_arrow : Icons.pause),
-                tooltip: provider.isPaused ? '继续' : '暂停',
-                onPressed: provider.togglePause,
+                icon: Icon(paused ? Icons.play_arrow : Icons.pause),
+                tooltip: paused ? '继续' : '暂停',
+                onPressed: context.read<GameProvider>().togglePause,
               );
             },
           ),

@@ -92,11 +92,7 @@ class GameHud extends StatelessWidget {
 
 /// 只用于占位的棋盘槽位：把自身在游戏页中的矩形回报给 Flame 相机。
 class BoardSlot extends StatefulWidget {
-  const BoardSlot({
-    super.key,
-    required this.pageKey,
-    required this.onRect,
-  });
+  const BoardSlot({super.key, required this.pageKey, required this.onRect});
 
   final GlobalKey pageKey;
   final ValueChanged<Rect> onRect;
@@ -130,6 +126,17 @@ class _BoardSlotState extends State<BoardSlot> {
   }
 }
 
+/// HUD 需要展示的字段快照，字段值相等时 HUD 不重建。
+typedef _StatusSnapshot = ({
+  int highScore,
+  String mode,
+  String level,
+  int? remainingSeconds,
+  int combo,
+  GameStatus status,
+  GameOverReason reason,
+});
+
 /// 最高分、关卡与结束状态。
 class _StatusLine extends StatelessWidget {
   const _StatusLine({this.vertical = false});
@@ -138,53 +145,59 @@ class _StatusLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameProvider>();
-    final state = game.state;
+    final snapshot = context.select<GameProvider, _StatusSnapshot>((game) {
+      final state = game.state;
+      return (
+        highScore: state.highScore,
+        mode: game.mode.label,
+        level: game.level.label,
+        remainingSeconds: game.remainingSeconds?.ceil(),
+        combo: game.combo,
+        status: state.status,
+        reason: state.overReason,
+      );
+    });
     final colorScheme = Theme.of(context).colorScheme;
-    final remaining = game.remainingSeconds;
+    final remaining = snapshot.remainingSeconds;
     final items = <Widget>[
       Text(
-        '最高分: ${state.highScore}',
+        '最高分: ${snapshot.highScore}',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colorScheme.secondary,
-              fontWeight: FontWeight.w600,
-            ),
+          color: colorScheme.secondary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       Text(
-        '模式: ${game.mode.label}',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+        '模式: ${snapshot.mode}',
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
       Text(
-        '关卡: ${game.level.label}',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+        '关卡: ${snapshot.level}',
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
       if (remaining != null)
         Text(
-          '剩余: ${remaining.ceil()}s',
+          '剩余: ${remaining}s',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: remaining <= 10 ? colorScheme.error : colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+            color: remaining <= 10 ? colorScheme.error : colorScheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      if (game.combo > 1)
+      if (snapshot.combo > 1)
         Text(
-          '连击 x${game.combo}',
+          '连击 x${snapshot.combo}',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.tertiary,
-                fontWeight: FontWeight.w600,
-              ),
+            color: colorScheme.tertiary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      if (state.status == GameStatus.over)
+      if (snapshot.status == GameStatus.over)
         Text(
-          state.overReason.label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.error,
-                fontWeight: FontWeight.w600,
-              ),
+          snapshot.reason.label,
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: colorScheme.error, fontWeight: FontWeight.w600),
         ),
     ];
 
@@ -217,10 +230,18 @@ class _EffectsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effects = context.watch<GameProvider>().activeEffects;
-    if (effects.isEmpty) {
+    // 用类型 + 整秒数做签名，秒数不变就不重建，避免每帧刷新文本。
+    final signature = context.select<GameProvider, String>(
+      (game) => game.activeEffects
+          .map((effect) => '${effect.type.name}:${effect.remaining.ceil()}')
+          .join('|'),
+    );
+    if (signature.isEmpty) {
       return const SizedBox.shrink();
     }
+    final effects = context.read<GameProvider>().activeEffects.toList(
+      growable: false,
+    );
     return Wrap(
       spacing: 8,
       runSpacing: 6,
@@ -272,8 +293,9 @@ class _HintArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameProvider>();
-    final status = game.state.status;
+    final status = context.select<GameProvider, GameStatus>(
+      (game) => game.state.status,
+    );
 
     if (status == GameStatus.playing && !showHint) {
       return const SizedBox.shrink();
@@ -289,8 +311,8 @@ class _HintArea extends StatelessWidget {
                 GameHints.inGame,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -299,12 +321,10 @@ class _HintArea extends StatelessWidget {
     }
     if (status == GameStatus.idle) {
       return ElevatedButton.icon(
-        onPressed: game.start,
+        onPressed: context.read<GameProvider>().start,
         icon: const Icon(Icons.replay),
         label: const Text('重新开始'),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(180, 44),
-        ),
+        style: ElevatedButton.styleFrom(minimumSize: const Size(180, 44)),
       );
     }
     return const SizedBox.shrink();
