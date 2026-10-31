@@ -55,53 +55,69 @@ class SettingsProvider extends ChangeNotifier {
     return '中 (20×20)';
   }
 
-  Future<void> toggleDarkMode(bool value) async {
-    if (_darkMode == value) return;
-    _darkMode = value;
-    notifyListeners();
-    await _storage.setDarkMode(value);
-  }
+  Future<void> toggleDarkMode(bool value) => _update(
+    current: _darkMode,
+    next: value,
+    apply: () => _darkMode = value,
+    persist: _storage.setDarkMode,
+  );
 
-  Future<void> setBoardSize(int size) async {
-    if (_boardSize == size) return;
-    _boardSize = size;
-    notifyListeners();
-    await _storage.setBoardSize(size);
-  }
+  Future<void> setBoardSize(int size) => _update(
+    current: _boardSize,
+    next: size,
+    apply: () => _boardSize = size,
+    persist: _storage.setBoardSize,
+  );
 
-  Future<void> setSpeed(int ms) async {
-    if (_speed == ms) return;
-    _speed = ms;
-    notifyListeners();
-    await _storage.setSpeed(ms);
-  }
+  Future<void> setSpeed(int ms) => _update(
+    current: _speed,
+    next: ms,
+    apply: () => _speed = ms,
+    persist: _storage.setSpeed,
+  );
 
-  Future<void> setLevel(LevelType level) async {
-    if (_level == level) return;
-    _level = level;
-    notifyListeners();
-    await _storage.setLevel(level);
-  }
+  Future<void> setLevel(LevelType level) => _update(
+    current: _level,
+    next: level,
+    apply: () => _level = level,
+    persist: _storage.setLevel,
+  );
 
-  Future<void> setSkin(SnakeSkin skin) async {
-    if (_skin == skin) return;
-    _skin = skin;
-    notifyListeners();
-    await _storage.setSkin(skin);
-  }
+  Future<void> setSkin(SnakeSkin skin) => _update(
+    current: _skin,
+    next: skin,
+    apply: () => _skin = skin,
+    persist: _storage.setSkin,
+  );
 
-  Future<void> setMode(GameMode mode) async {
-    if (_mode == mode) return;
-    _mode = mode;
-    notifyListeners();
-    await _storage.setMode(mode);
-  }
+  Future<void> setMode(GameMode mode) => _update(
+    current: _mode,
+    next: mode,
+    apply: () => _mode = mode,
+    persist: _storage.setMode,
+  );
 
-  Future<void> setMuted(bool v) async {
-    if (_muted == v) return;
-    _muted = v;
-    AudioService().setMuted(v);
+  Future<void> setMuted(bool value) => _update(
+    current: _muted,
+    next: value,
+    apply: () {
+      _muted = value;
+      AudioService().setMuted(value);
+    },
+    persist: _storage.setMuted,
+  );
+
+  /// 设置项统一写入流程：值未变直接返回；先刷新界面再异步落盘，
+  /// 避免等待磁盘 IO 时切页出现无响应感。
+  Future<void> _update<T>({
+    required T current,
+    required T next,
+    required VoidCallback apply,
+    required Future<void> Function(T value) persist,
+  }) async {
+    if (current == next) return;
+    apply();
     notifyListeners();
-    await _storage.setMuted(v);
+    await persist(next);
   }
 }
