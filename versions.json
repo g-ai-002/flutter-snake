@@ -6,9 +6,15 @@
     "debug": true
   },
   {
+    "version": "v0.12.1",
+    "url": "./v0.12.1/",
+    "latest": true,
+    "debug": false
+  },
+  {
     "version": "v0.12.0",
     "url": "./v0.12.0/",
-    "latest": true,
+    "latest": false,
     "debug": false
   },
   {
