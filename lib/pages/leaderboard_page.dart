@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/leaderboard_service.dart';
 
+import '../services/leaderboard_service.dart';
+import '../utils/formatters.dart';
+
+/// 排行榜页：展示全部记录，支持一键清空。
 class LeaderboardPage extends StatefulWidget {
   const LeaderboardPage({super.key});
 
@@ -11,14 +14,13 @@ class LeaderboardPage extends StatefulWidget {
 class _LeaderboardPageState extends State<LeaderboardPage> {
   List<LeaderboardEntry> _entries = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _load();
   }
-
-  String? _error;
 
   Future<void> _load() async {
     try {
@@ -29,7 +31,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         _loading = false;
         _error = null;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -38,10 +40,31 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     }
   }
 
+  Future<void> _confirmClear() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清空排行榜'),
+        content: const Text('确定要清空所有记录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await LeaderboardService.clear();
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('排行榜'),
@@ -50,95 +73,111 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: '清空',
-              onPressed: () async {
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('清空排行榜'),
-                    content: const Text('确定要清空所有记录吗？'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确定')),
-                    ],
-                  ),
-                );
-                if (ok == true) {
-                  await LeaderboardService.clear();
-                  _load();
-                }
-              },
+              onPressed: _confirmClear,
             ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline, size: 64, color: colorScheme.error),
-                      const SizedBox(height: 16),
-                      Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: 16),
-                      OutlinedButton(onPressed: _load, child: const Text('重试')),
-                    ],
-                  ),
-                )
-              : _entries.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.emoji_events, size: 64, color: colorScheme.outline),
-                      const SizedBox(height: 16),
-                      Text('暂无记录', style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: 4),
-                      Text('开始游戏来创造记录吧', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _entries.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
-                  itemBuilder: (context, index) {
-                    final entry = _entries[index];
-                    final rank = index + 1;
-                    return ListTile(
-                      leading: _RankBadge(rank: rank),
-                      title: Text(
-                        '${entry.score} 分',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      subtitle: Text(
-                        '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')} '
-                        '${entry.date.hour.toString().padLeft(2, '0')}:${entry.date.minute.toString().padLeft(2, '0')}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    );
-                  },
-                ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return _EmptyState(
+        icon: Icons.error_outline,
+        title: _error!,
+        color: Theme.of(context).colorScheme.error,
+        action: OutlinedButton(onPressed: _load, child: const Text('重试')),
+      );
+    }
+    if (_entries.isEmpty) {
+      return _EmptyState(
+        icon: Icons.emoji_events,
+        title: '暂无记录',
+        subtitle: '开始游戏来创造记录吧',
+        color: Theme.of(context).colorScheme.outline,
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _entries.length,
+      separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
+      itemBuilder: (context, index) {
+        final entry = _entries[index];
+        return ListTile(
+          leading: _RankBadge(rank: index + 1),
+          title: Text(
+            '${entry.score} 分',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          subtitle: Text(
+            formatDateTime(entry.date),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 空态/错误态的统一版式。
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.color,
+    this.subtitle,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final Color color;
+  final String? subtitle;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 64, color: color),
+          const SizedBox(height: 16),
+          Text(title, style: theme.textTheme.bodyLarge),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle!, style: theme.textTheme.bodySmall),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
     );
   }
 }
 
 class _RankBadge extends StatelessWidget {
-  final int rank;
   const _RankBadge({required this.rank});
+
+  final int rank;
+
+  /// 前三名的奖牌配色：金、银、铜。
+  static const List<Color> _medalColors = [
+    Color(0xFFFFD700),
+    Color(0xFFC0C0C0),
+    Color(0xFFCD7F32),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final colors = [
-      const Color(0xFFFFD700),
-      const Color(0xFFC0C0C0),
-      const Color(0xFFCD7F32),
-    ];
-
-    if (rank <= 3) {
+    if (rank <= _medalColors.length) {
       return CircleAvatar(
-        backgroundColor: colors[rank - 1],
+        backgroundColor: _medalColors[rank - 1],
         radius: 20,
         child: Text(
           '$rank',

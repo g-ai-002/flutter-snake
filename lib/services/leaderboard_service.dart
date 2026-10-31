@@ -59,11 +59,6 @@ class LeaderboardService {
     }
   }
 
-  static Future<int> getHighScore() async {
-    final entries = await getEntries();
-    return entries.isEmpty ? 0 : entries.first.score;
-  }
-
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);

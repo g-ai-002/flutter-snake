@@ -6,6 +6,8 @@ import '../models/game_mode.dart';
 import '../models/player_stats.dart';
 import '../providers/game_provider.dart';
 import '../services/leaderboard_service.dart';
+import '../utils/formatters.dart';
+import 'widgets/stat_metric.dart';
 
 /// 数据统计页：生涯数据、每日挑战进度与排行榜摘要。
 class StatsPage extends StatelessWidget {
@@ -16,25 +18,17 @@ class StatsPage extends StatelessWidget {
     final stats = context.select<GameProvider, PlayerStats>(
       (game) => game.stats,
     );
-    final todayBest = context.select<GameProvider, int>(
-      (game) => game.todayBest,
-    );
-    final playedToday = context.select<GameProvider, bool>(
-      (game) => game.playedToday,
-    );
-    final streak = context.select<GameProvider, int>(
-      (game) => game.dailyStreak,
-    );
-    final dailyBest = context.select<GameProvider, int>(
-      (game) => game.dailyBestEver,
-    );
-    final dailyDays = context.select<GameProvider, int>(
-      (game) => game.dailyPlayedDays,
-    );
-    final dailyRule = context.select<GameProvider, String>(
-      (game) =>
-          '${game.todayChallenge.weekdayLabel} · ${game.todayChallenge.subtitle}',
-    );
+    final daily = context.select<GameProvider, _DailyStats>((game) {
+      final challenge = game.todayChallenge;
+      return (
+        best: game.todayBest,
+        played: game.playedToday,
+        streak: game.dailyStreak,
+        bestEver: game.dailyBestEver,
+        playedDays: game.dailyPlayedDays,
+        rule: '${challenge.weekdayLabel} · ${challenge.subtitle}',
+      );
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('数据统计')),
@@ -52,22 +46,20 @@ class StatsPage extends StatelessWidget {
                     spacing: 24,
                     runSpacing: 16,
                     children: [
-                      _Metric(label: '总局数', value: '${stats.gamesPlayed}'),
-                      _Metric(label: '累计食物', value: '${stats.totalFood}'),
-                      _Metric(label: '最高分', value: '${stats.bestScore}'),
-                      _Metric(label: '最佳连击', value: 'x${stats.bestCombo}'),
-                      _Metric(label: '最长蛇身', value: '${stats.bestLength}'),
-                      _Metric(label: '限时最佳', value: '${stats.bestTimedScore}'),
-                      _Metric(
-                        label: '成就',
-                        value:
-                            '${AchievementCatalog.unlockedCount(stats)}'
+                      _metric('总局数', '${stats.gamesPlayed}'),
+                      _metric('累计食物', '${stats.totalFood}'),
+                      _metric('最高分', '${stats.bestScore}'),
+                      _metric('最佳连击', 'x${stats.bestCombo}'),
+                      _metric('最长蛇身', '${stats.bestLength}'),
+                      _metric('限时最佳', '${stats.bestTimedScore}'),
+                      _metric(
+                        '成就',
+                        '${AchievementCatalog.unlockedCount(stats)}'
                             '/${AchievementCatalog.all.length}',
                       ),
-                      _Metric(
-                        label: '已玩模式',
-                        value:
-                            '${stats.modesPlayed.length}'
+                      _metric(
+                        '已玩模式',
+                        '${stats.modesPlayed.length}'
                             '/${GameMode.values.length}',
                       ),
                     ],
@@ -76,19 +68,19 @@ class StatsPage extends StatelessWidget {
                 _SectionCard(
                   icon: Icons.today,
                   title: '每日挑战',
-                  subtitle: '今日规则：$dailyRule',
+                  subtitle: '今日规则：${daily.rule}',
                   child: Wrap(
                     spacing: 24,
                     runSpacing: 16,
                     children: [
-                      _Metric(
-                        label: '今日最佳',
-                        value: playedToday ? '$todayBest' : '未挑战',
-                        accent: playedToday,
+                      _metric(
+                        '今日最佳',
+                        daily.played ? '${daily.best}' : '未挑战',
+                        accent: daily.played,
                       ),
-                      _Metric(label: '连续天数', value: '$streak'),
-                      _Metric(label: '历史最佳', value: '$dailyBest'),
-                      _Metric(label: '挑战天数', value: '$dailyDays'),
+                      _metric('连续天数', '${daily.streak}'),
+                      _metric('历史最佳', '${daily.bestEver}'),
+                      _metric('挑战天数', '${daily.playedDays}'),
                     ],
                   ),
                 ),
@@ -112,7 +104,20 @@ class StatsPage extends StatelessWidget {
       ),
     );
   }
+
+  static Widget _metric(String label, String value, {bool accent = false}) {
+    return StatMetric(label: label, value: value, accent: accent, width: 108);
+  }
 }
+
+typedef _DailyStats = ({
+  int best,
+  bool played,
+  int streak,
+  int bestEver,
+  int playedDays,
+  String rule,
+});
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
@@ -165,46 +170,6 @@ class _SectionCard extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           child,
-        ],
-      ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  const _Metric({
-    required this.label,
-    required this.value,
-    this.accent = false,
-  });
-
-  final String label;
-  final String value;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return SizedBox(
-      width: 108,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: accent ? colors.primary : null,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
         ],
       ),
     );
@@ -272,7 +237,7 @@ class _LeaderboardPreview extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatDate(top[i].date),
+                      formatShortDateTime(top[i].date),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -284,11 +249,5 @@ class _LeaderboardPreview extends StatelessWidget {
         );
       },
     );
-  }
-
-  static String _formatDate(DateTime date) {
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${two(date.month)}-${two(date.day)} '
-        '${two(date.hour)}:${two(date.minute)}';
   }
 }

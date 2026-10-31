@@ -18,6 +18,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final highScore = context.select<GameProvider, int>(
       (g) => g.state.highScore,
     );
@@ -64,12 +65,7 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: '设置',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
-            },
+            onPressed: () => _push(context, const SettingsPage()),
           ),
         ],
       ),
@@ -108,14 +104,7 @@ class HomePage extends StatelessWidget {
                         width: 200,
                         height: 48,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const GamePage(),
-                              ),
-                            );
-                          },
+                          onPressed: () => _push(context, const GamePage()),
                           icon: const Icon(Icons.play_arrow),
                           label: const Text(
                             '开始游戏',
@@ -131,53 +120,21 @@ class HomePage extends StatelessWidget {
                         runSpacing: 10,
                         alignment: WrapAlignment.center,
                         children: [
-                          SizedBox(
-                            width: 120,
-                            height: 42,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LeaderboardPage(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.emoji_events, size: 18),
-                              label: const Text('排行榜'),
-                            ),
+                          _NavButton(
+                            icon: Icons.emoji_events,
+                            label: '排行榜',
+                            onTap: () => _push(context, const LeaderboardPage()),
                           ),
-                          SizedBox(
-                            width: 120,
-                            height: 42,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const AchievementsPage(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.military_tech, size: 18),
-                              label: Text('成就 $unlocked'),
-                            ),
+                          _NavButton(
+                            icon: Icons.military_tech,
+                            label: '成就 $unlocked',
+                            onTap: () =>
+                                _push(context, const AchievementsPage()),
                           ),
-                          SizedBox(
-                            width: 120,
-                            height: 42,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const StatsPage(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.insights, size: 18),
-                              label: const Text('数据'),
-                            ),
+                          _NavButton(
+                            icon: Icons.insights,
+                            label: '数据',
+                            onTap: () => _push(context, const StatsPage()),
                           ),
                         ],
                       ),
@@ -188,19 +145,19 @@ class HomePage extends StatelessWidget {
                             ?.copyWith(color: colorScheme.secondary),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        '模式: $modeLabel  |  关卡: $levelLabel',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '皮肤: $skinLabel  |  棋盘: $boardSizeLabel',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '速度: $speedLabel',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      Column(
+                        spacing: 4,
+                        children: [
+                          Text(
+                            '模式: $modeLabel  |  关卡: $levelLabel',
+                            style: textTheme.bodySmall,
+                          ),
+                          Text(
+                            '皮肤: $skinLabel  |  棋盘: $boardSizeLabel',
+                            style: textTheme.bodySmall,
+                          ),
+                          Text('速度: $speedLabel', style: textTheme.bodySmall),
+                        ],
                       ),
                     ],
                   ),
@@ -209,6 +166,36 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _push(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
+}
+
+/// 首页快捷入口：固定尺寸的描边按钮。
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 120,
+      height: 42,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
       ),
     );
   }

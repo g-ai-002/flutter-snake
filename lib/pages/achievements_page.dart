@@ -5,6 +5,7 @@ import '../game/mode_style.dart';
 import '../models/achievement.dart';
 import '../models/player_stats.dart';
 import '../providers/game_provider.dart';
+import 'widgets/stat_metric.dart';
 
 /// 成就页：展示解锁进度与累计统计。
 class AchievementsPage extends StatelessWidget {
@@ -90,43 +91,18 @@ class _SummaryCard extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _StatItem(label: '局数', value: '${stats.gamesPlayed}'),
-              _StatItem(label: '最佳连击', value: 'x${stats.bestCombo}'),
-              _StatItem(label: '最长蛇身', value: '${stats.bestLength}'),
-              _StatItem(label: '限时最佳', value: '${stats.bestTimedScore}'),
+              StatMetric(label: '局数', value: '${stats.gamesPlayed}', dense: true),
+              StatMetric(label: '最佳连击', value: 'x${stats.bestCombo}', dense: true),
+              StatMetric(label: '最长蛇身', value: '${stats.bestLength}', dense: true),
+              StatMetric(
+                label: '限时最佳',
+                value: '${stats.bestTimedScore}',
+                dense: true,
+              ),
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  const _StatItem({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
