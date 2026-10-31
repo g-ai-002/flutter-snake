@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -136,9 +137,7 @@ class GameProvider extends ChangeNotifier {
   }
 
   void start() {
-    final w = _state.boardWidth;
-    final h = _state.boardHeight;
-    startWithLayout(_buildLayout(w, h, w ~/ 2, h ~/ 2));
+    startWithLayout(_buildLayout(_state.boardWidth, _state.boardHeight));
   }
 
   /// 使用指定布局开局，供自定义关卡与测试使用。
@@ -183,7 +182,9 @@ class GameProvider extends ChangeNotifier {
   }
 
   /// 生成当前关卡的布局，并清空出生点所在行，避免开局即撞墙。
-  LevelLayout _buildLayout(int w, int h, int center, int mid) {
+  LevelLayout _buildLayout(int w, int h) {
+    final center = w ~/ 2;
+    final mid = h ~/ 2;
     final base = buildLevelLayout(_level, w, h);
     final walls = Set<Point>.of(base.walls);
     // 出生通道留出 5 格缓冲，让玩家在倒计时后有时间转向。
@@ -244,109 +245,127 @@ class GameProvider extends ChangeNotifier {
     if (_state.status != GameStatus.playing) return;
 
     final snake = _state.snake;
-    final dir = _nextDirection;
+    final direction = _nextDirection;
     _directionLocked = false;
 
-    var newHead = snake.head.move(dir);
-    if (_state.mode.wrapsEdges) {
-      newHead = Point(
-        newHead.x % _state.boardWidth,
-        newHead.y % _state.boardHeight,
-      );
-    }
-    final portalExit = _state.layout.portalExit(newHead);
-    if (portalExit != null) {
-      LogService.info('穿越传送门: $newHead -> $portalExit');
-      newHead = portalExit;
-    }
-
-    if (_isCollision(newHead, snake)) {
-      if (_powerUps.consumeShield()) {
-        if (audioEnabled) {
-          AudioService().playShieldBreak();
-        }
-        LogService.info('护盾抵挡了一次碰撞');
-        notifyListeners();
-        return;
-      }
+    final head = _resolveHead(snake.head.move(direction));
+    if (_isBlocked(head, snake)) {
+      if (_consumeShield()) return;
       _finish(GameOverReason.collision);
       return;
     }
 
     final food = _state.food;
-    final ate =
-        newHead == food.position ||
-        (_powerUps.has(PowerUpType.magnet) &&
-            newHead.manhattanTo(food.position) <= 1);
-
-    final newBody = List<Point>.from(snake.body)..add(newHead);
+    final ate = _canEat(food, head);
+    final body = List<Point>.of(snake.body)..add(head);
     if (!ate) {
-      newBody.removeAt(0);
+      body.removeAt(0);
     }
 
-    var gain = 0;
-    var newScore = _state.score;
-    var newRemaining = _state.remainingSeconds;
+    var score = _state.score;
+    var remaining = _state.remainingSeconds;
     if (ate) {
       _foodEaten++;
       _combo.registerEat();
-      gain = GameRules.baseFoodScore * _combo.multiplier;
-      if (_powerUps.has(PowerUpType.doubleScore)) {
-        gain *= 2;
-      }
-      newScore += gain;
+      score += _scoreForFood();
       if (_state.mode == GameMode.timed) {
-        newRemaining = min(
+        remaining = min(
           GameRules.timedMaxSeconds.toDouble(),
-          newRemaining + GameRules.timedBonusSeconds,
+          remaining + GameRules.timedBonusSeconds,
         );
-        _lastTimeDisplay = newRemaining.ceil();
+        _lastTimeDisplay = remaining.ceil();
       }
     }
 
     final previousHighScore = _state.highScore;
-    final newHighScore = newScore > previousHighScore
-        ? newScore
-        : previousHighScore;
-
-    Food newFood = food;
-    if (ate) {
-      newFood = _foodSpawner.spawn(
-        columns: _state.boardWidth,
-        rows: _state.boardHeight,
-        occupied: newBody,
-        layout: _state.layout,
-      );
-      if (food.type == null) {
-        LogService.info('吃到食物, 得分: $newScore, 连击: ${_combo.combo}');
-        if (audioEnabled) {
-          AudioService().playEat();
-        }
-      } else {
-        _powerUps.activate(food.type!);
-        LogService.info('拾取道具: ${food.type!.label}, 得分: $newScore');
-        if (audioEnabled) {
-          AudioService().playPowerUp();
-        }
-      }
-    }
+    final highScore = max(score, previousHighScore);
 
     _state = _state.copyWith(
-      snake: snake.copyWith(body: newBody, direction: dir),
-      food: newFood,
-      score: newScore,
-      highScore: newHighScore,
-      remainingSeconds: newRemaining,
+      snake: snake.copyWith(body: body, direction: direction),
+      food: ate ? _spawnFood(body) : food,
+      score: score,
+      highScore: highScore,
+      remainingSeconds: remaining,
     );
 
-    if (newHighScore > previousHighScore) {
-      _storage.setHighScore(newHighScore);
+    if (ate) {
+      _applyPickup(food, score);
+    }
+    if (highScore > previousHighScore) {
+      _storage.setHighScore(highScore);
     }
 
     notifyListeners();
   }
 
-  bool _isCollision(Point head, Snake snake) {
+  /// 穿墙与传送门都在这里结算，返回蛇头真正落点。
+  Point _resolveHead(Point head) {
+    var resolved = head;
+    if (_state.mode.wrapsEdges) {
+      resolved = Point(
+        resolved.x % _state.boardWidth,
+        resolved.y % _state.boardHeight,
+      );
+    }
+    final portalExit = _state.layout.portalExit(resolved);
+    if (portalExit != null) {
+      LogService.info('穿越传送门: $resolved -> $portalExit');
+      resolved = portalExit;
+    }
+    return resolved;
+  }
+
+  /// 食物本身或磁铁吸附范围内的一格都算吃到。
+  bool _canEat(Food food, Point head) {
+    if (head == food.position) return true;
+    return _powerUps.has(PowerUpType.magnet) &&
+        head.manhattanTo(food.position) <= 1;
+  }
+
+  int _scoreForFood() {
+    var gain = GameRules.baseFoodScore * _combo.multiplier;
+    if (_powerUps.has(PowerUpType.doubleScore)) {
+      gain *= 2;
+    }
+    return gain;
+  }
+
+  Food _spawnFood(List<Point> occupied) => _foodSpawner.spawn(
+    columns: _state.boardWidth,
+    rows: _state.boardHeight,
+    occupied: occupied,
+    layout: _state.layout,
+  );
+
+  /// 护盾抵消一次碰撞；返回 true 表示本步不再结算死亡。
+  bool _consumeShield() {
+    if (!_powerUps.consumeShield()) return false;
+    if (audioEnabled) {
+      AudioService().playShieldBreak();
+    }
+    LogService.info('护盾抵挡了一次碰撞');
+    notifyListeners();
+    return true;
+  }
+
+  /// 拾取后的道具激活、音效与日志。
+  void _applyPickup(Food food, int score) {
+    final type = food.type;
+    if (type == null) {
+      LogService.info('吃到食物, 得分: $score, 连击: ${_combo.combo}');
+      if (audioEnabled) {
+        AudioService().playEat();
+      }
+      return;
+    }
+    _powerUps.activate(type);
+    LogService.info('拾取道具: ${type.label}, 得分: $score');
+    if (audioEnabled) {
+      AudioService().playPowerUp();
+    }
+  }
+
+  bool _isBlocked(Point head, Snake snake) {
     if (head.x < 0 ||
         head.x >= _state.boardWidth ||
         head.y < 0 ||
@@ -354,8 +373,11 @@ class GameProvider extends ChangeNotifier {
       return true;
     }
     if (_state.layout.isWall(head)) return true;
-    final bodyWithoutTail = snake.body.sublist(1);
-    return bodyWithoutTail.any((p) => p == head);
+    // 尾巴会在本步移开，因此从下标 1 开始判定。
+    for (var i = 1; i < snake.body.length; i++) {
+      if (snake.body[i] == head) return true;
+    }
+    return false;
   }
 
   void _finish(GameOverReason reason) {
@@ -365,7 +387,7 @@ class GameProvider extends ChangeNotifier {
     if (audioEnabled) {
       AudioService().playGameOver();
     }
-    LeaderboardService.addScore(_state.score);
+    unawaited(LeaderboardService.addScore(_state.score));
     final newHighScore = _state.score > _state.highScore
         ? _state.score
         : _state.highScore;
