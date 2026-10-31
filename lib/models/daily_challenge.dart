@@ -1,3 +1,4 @@
+import '../utils/formatters.dart';
 import 'game_mode.dart';
 import 'level.dart';
 
@@ -106,12 +107,7 @@ class DailyChallenge {
   }
 
   /// `yyyyMMdd`，补零后长度固定，字典序即时间序。
-  static String keyFor(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year$month$day';
-  }
+  static String keyFor(DateTime date) => formatDateKey(date);
 
   /// 由日期键生成稳定的 31 位种子，不依赖平台与运行环境。
   static int seedForKey(String key) {

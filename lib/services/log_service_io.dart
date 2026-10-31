@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../utils/formatters.dart';
+
 /// 日志服务：内存环形缓冲 + 按天文件落盘。
 ///
 /// - 初始化前产生的日志先进入早期缓冲，初始化后自动补写文件；
@@ -90,7 +92,7 @@ class LogService {
   static void _log(String level, String message) {
     final inst = _instance;
     if (inst == null || !inst._initialized) {
-      final line = _formatLine(
+      final line = formatLogLine(
         inst?._now() ?? DateTime.now(),
         level,
         message,
@@ -104,16 +106,8 @@ class LogService {
     inst._write(level, message);
   }
 
-  static String _formatLine(DateTime now, String level, String message) {
-    final ts =
-        '${_pad(now.hour)}:${_pad(now.minute)}:${_pad(now.second)}.${now.millisecond.toString().padLeft(3, '0')}';
-    return '[$ts][$level] $message';
-  }
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
-
   void _write(String level, String message) {
-    final line = _formatLine(_now(), level, message);
+    final line = formatLogLine(_now(), level, message);
     _buffer.add(line);
     if (_buffer.length > _maxBufferLines) {
       _buffer.removeAt(0);
@@ -154,7 +148,7 @@ class LogService {
     if (dir == null) return null;
     try {
       final now = _now();
-      final dateStr = '${now.year}${_pad(now.month)}${_pad(now.day)}';
+      final dateStr = formatDateKey(now);
       final file = File('${dir.path}${Platform.pathSeparator}app_$dateStr.log');
       if (!file.existsSync()) {
         file.createSync(recursive: true);

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/formatters.dart';
+
 /// Web 平台日志：只保留内存环形缓冲，不落盘。
 ///
 /// 与 IO 实现保持相同的静态 API，调用方无需区分平台。
@@ -46,16 +48,11 @@ class LogService {
       // 与 IO 实现一致：初始化前的日志也保留在内存缓冲里。
       debugPrint('[LogService] $level $message');
     }
-    final now = DateTime.now();
-    final ts = '${_pad(now.hour)}:${_pad(now.minute)}:${_pad(now.second)}.'
-        '${now.millisecond.toString().padLeft(3, '0')}';
-    _buffer.add('[$ts][$level] $message');
+    _buffer.add(formatLogLine(DateTime.now(), level, message));
     if (_buffer.length > _maxBufferLines) {
       _buffer.removeAt(0);
     }
   }
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
 
   static List<String> getRecentLogs([int lines = 200]) {
     if (_buffer.length <= lines) {
