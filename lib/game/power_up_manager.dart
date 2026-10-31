@@ -66,20 +66,24 @@ class PowerUpManager {
   bool update(double dt) {
     if (_effects.isEmpty) return false;
 
-    var changed = false;
-    for (final effect in _effects.values.toList()) {
+    var expired = false;
+    for (final effect in _effects.values) {
       effect.remaining -= dt;
-      if (effect.remaining <= 0) {
-        _effects.remove(effect.type);
-        if (effect.type == PowerUpType.shield) {
+      if (effect.remaining <= 0) expired = true;
+    }
+    // 先计时再统一清理，避免每帧拷贝一份 effects 列表。
+    if (expired) {
+      _effects.removeWhere((type, effect) {
+        if (effect.remaining > 0) return false;
+        if (type == PowerUpType.shield) {
           _shieldCharges = 0;
         }
-        changed = true;
-      }
+        return true;
+      });
     }
 
     _notifyTimer += dt;
-    if (!changed && _notifyTimer < _notifyInterval) {
+    if (!expired && _notifyTimer < _notifyInterval) {
       return false;
     }
     _notifyTimer = 0;

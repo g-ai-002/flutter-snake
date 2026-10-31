@@ -61,6 +61,18 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
   static const int _maxStepsPerFrame = 4;
   static const double _gameOverOverlayDelay = 0.55;
 
+  /// 方向键与 WASD 到游戏方向的映射。
+  static final Map<LogicalKeyboardKey, Direction> _directionKeys = {
+    LogicalKeyboardKey.arrowUp: Direction.up,
+    LogicalKeyboardKey.keyW: Direction.up,
+    LogicalKeyboardKey.arrowDown: Direction.down,
+    LogicalKeyboardKey.keyS: Direction.down,
+    LogicalKeyboardKey.arrowLeft: Direction.left,
+    LogicalKeyboardKey.keyA: Direction.left,
+    LogicalKeyboardKey.arrowRight: Direction.right,
+    LogicalKeyboardKey.keyD: Direction.right,
+  };
+
   final GameProvider provider;
   final Color surfaceColor;
   final Color snakeColor;
@@ -114,7 +126,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
       return KeyEventResult.ignored;
     }
 
-    final direction = _directionFor(event.logicalKey);
+    final direction = _directionKeys[event.logicalKey];
     if (direction != null) {
       provider.changeDirection(direction);
       return KeyEventResult.handled;
@@ -129,22 +141,6 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     return KeyEventResult.ignored;
-  }
-
-  Direction? _directionFor(LogicalKeyboardKey key) {
-    if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.keyW) {
-      return Direction.up;
-    }
-    if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.keyS) {
-      return Direction.down;
-    }
-    if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.keyA) {
-      return Direction.left;
-    }
-    if (key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.keyD) {
-      return Direction.right;
-    }
-    return null;
   }
 
   @override
@@ -399,8 +395,7 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     }
 
     if (status == GameStatus.idle) {
-      _countdown.stop();
-      overlays.remove(countdownOverlayId);
+      _stopCountdown();
       overlays.remove(gameOverOverlayId);
       _snake.snapToCurrent();
     }
@@ -415,10 +410,9 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     world.timeScale = 1.0;
     _camera.reset();
     _snake.snapToCurrent();
-    _countdown.stop();
+    _stopCountdown();
     _gameOverOverlayPending = false;
     overlays.remove(gameOverOverlayId);
-    overlays.remove(countdownOverlayId);
   }
 
   void _startCountdown() {
@@ -426,25 +420,30 @@ class SnakeGame extends FlameGame<SnakeWorld> with KeyboardEvents {
     overlays.add(countdownOverlayId, priority: 10);
   }
 
-  void _triggerDeath() {
+  void _stopCountdown() {
     _countdown.stop();
     overlays.remove(countdownOverlayId);
-    _accumulator = 0;
+  }
+
+  /// 撞墙/撞身：闪屏 + 慢动作 + 抖动后弹出结算。
+  void _triggerDeath() {
     _snake.snapToCurrent();
     _feedback.triggerDeath();
     world.timeScale = _feedback.timeScale;
-    _camera.pulse();
     _camera.shake();
-    _gameOverOverlayPending = true;
-    _gameOverOverlayTimer = _gameOverOverlayDelay;
+    _scheduleGameOverOverlay();
   }
 
   /// 限时挑战时间耗尽：不播死亡闪屏与慢动作，只做一次相机脉冲。
   void _onTimeUp() {
-    _countdown.stop();
-    overlays.remove(countdownOverlayId);
-    _accumulator = 0;
     _snake.snapToCurrent();
+    _scheduleGameOverOverlay();
+  }
+
+  /// 结算前的公共收尾：停倒计时、清步进、脉冲，延迟弹出结算遮罩。
+  void _scheduleGameOverOverlay() {
+    _stopCountdown();
+    _accumulator = 0;
     _camera.pulse();
     _gameOverOverlayPending = true;
     _gameOverOverlayTimer = _gameOverOverlayDelay;

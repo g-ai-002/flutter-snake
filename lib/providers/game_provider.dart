@@ -178,12 +178,7 @@ class GameProvider extends ChangeNotifier {
       return;
     }
     // 重开每日挑战时重置种子，保证同一局排期内食物序列可复现。
-    _foodSpawner = _spawnerFactory(daily.seed);
-    _state = _state.copyWith(
-      boardWidth: daily.boardSize,
-      boardHeight: daily.boardSize,
-      speedMs: daily.speedMs,
-    );
+    _applyDailyRules(daily);
     startWithLayout(_buildLayout(daily.boardSize, daily.boardSize));
   }
 
@@ -193,6 +188,11 @@ class GameProvider extends ChangeNotifier {
     _dailyResult = null;
     _level = challenge.level;
     _mode = challenge.mode;
+    _applyDailyRules(challenge);
+  }
+
+  /// 每日挑战的棋盘、速度与食物种子；开局与预置共用。
+  void _applyDailyRules(DailyChallenge challenge) {
     _foodSpawner = _spawnerFactory(challenge.seed);
     _state = _state.copyWith(
       boardWidth: challenge.boardSize,
@@ -223,19 +223,9 @@ class GameProvider extends ChangeNotifier {
     LogService.info('$prefix游戏开始, 关卡: ${_level.label}, 模式: ${_mode.label}');
     final w = _state.boardWidth;
     final h = _state.boardHeight;
-    final center = w ~/ 2;
-    final mid = h ~/ 2;
-    final body = [
-      Point(center - 2, mid),
-      Point(center - 1, mid),
-      Point(center, mid),
-    ];
+    final body = _initialBody(w, h);
 
-    _powerUps.clear();
-    _combo.reset();
-    _foodEaten = 0;
-    _lastUnlocked = const <AchievementId>[];
-    _lastTimeDisplay = (_mode.initialSeconds ?? 0).ceil();
+    _resetRun();
     _state = GameState(
       snake: Snake(body: body),
       food: _foodSpawner.spawn(
@@ -255,9 +245,29 @@ class GameProvider extends ChangeNotifier {
       remainingSeconds: _mode.initialSeconds ?? 0,
       daily: daily,
     );
+    notifyListeners();
+  }
+
+  /// 出生点：棋盘中央、蛇头朝右的三格蛇身。
+  List<Point> _initialBody(int w, int h) {
+    final center = w ~/ 2;
+    final mid = h ~/ 2;
+    return [
+      Point(center - 2, mid),
+      Point(center - 1, mid),
+      Point(center, mid),
+    ];
+  }
+
+  /// 开局前清空上一局的临时状态，避免道具、连击与成就残留。
+  void _resetRun() {
+    _powerUps.clear();
+    _combo.reset();
+    _foodEaten = 0;
+    _lastUnlocked = const <AchievementId>[];
+    _lastTimeDisplay = (_mode.initialSeconds ?? 0).ceil();
     _nextDirection = Direction.right;
     _directionLocked = false;
-    notifyListeners();
   }
 
   /// 生成当前关卡的布局，并清空出生点所在行，避免开局即撞墙。
@@ -466,14 +476,29 @@ class GameProvider extends ChangeNotifier {
     if (audioEnabled) {
       AudioService().playGameOver();
     }
+    _recordScore();
+    final highScore = _recordStats();
+    _combo.reset();
+    _state = _state.copyWith(
+      status: GameStatus.over,
+      highScore: highScore,
+      overReason: reason,
+    );
+    notifyListeners();
+  }
+
+  /// 排行榜与每日挑战成绩：结算时立即写入，不阻塞界面。
+  void _recordScore() {
     unawaited(LeaderboardService.addScore(_state.score));
     final daily = _daily;
     if (daily != null) {
       _dailyResult = DailyService.instance.record(daily.dateKey, _state.score);
     }
-    final newHighScore = _state.score > _state.highScore
-        ? _state.score
-        : _state.highScore;
+  }
+
+  /// 累计统计与成就解锁；返回刷新后的最高分。
+  int _recordStats() {
+    final newHighScore = max(_state.score, _state.highScore);
     if (newHighScore > _state.highScore) {
       _storage.setHighScore(newHighScore);
     }
@@ -493,12 +518,6 @@ class GameProvider extends ChangeNotifier {
         '解锁成就: ${update.unlocked.map((id) => id.title).join('、')}',
       );
     }
-    _combo.reset();
-    _state = _state.copyWith(
-      status: GameStatus.over,
-      highScore: newHighScore,
-      overReason: reason,
-    );
-    notifyListeners();
+    return newHighScore;
   }
 }
