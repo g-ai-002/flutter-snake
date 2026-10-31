@@ -37,17 +37,17 @@
 
 ## 下载
 
-### v0.11.0（当前版本）
+### v0.11.1（当前版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0)
-- [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/debug/)（首次需手动运行一次
-  `Build & Release` 工作流；之后每个 `v*` tag 会生成独立的 `v<版本>/` 目录）
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.1)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.1)
+- [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/v0.11.1/)（每个 `v*` tag 会生成独立的
+  `v<版本>/` 目录，非 tag 构建写入 `debug/`）
 
 ### 历史版本
 
-- [v0.10.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1) | [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0) | [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0) | [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0)
-- 更早版本（v0.6.0 及以前）：[v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.11.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0) | [v0.10.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1) | [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0) | [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
+- 更早版本（v0.8.0 及以前）：[v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
@@ -88,7 +88,7 @@ flutter create --platforms=web --project-name flutter_snake .
 flutter run -d chrome
 ```
 
-发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.11.0/`、`v0.10.1/` …），
+发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.11.1/`、`v0.11.0/` …），
 非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
 
 ### 发布
@@ -126,7 +126,8 @@ git push origin v0.11.0
 - `lib/providers/game_provider.dart`：游戏规则、模式与持久化
 - `lib/models/game_mode.dart` / `lib/models/achievement.dart`：玩法模式与成就定义
 - `lib/services/stats_service.dart`：玩家统计与成就解锁
-- `lib/pages/widgets/game_hud.dart`：悬浮在画布上的 HUD
+- `lib/pages/widgets/game_hud.dart`：悬浮在画布上的 HUD（按字段精确订阅，避免每步重绘）
+- `lib/pages/settings_page.dart`：设置页（统一的 `_OptionGroup` 选项组件 + `RadioGroup`）
 - `lib/pages/achievements_page.dart`：成就进度页
 
 ## 许可证
