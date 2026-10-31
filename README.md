@@ -20,6 +20,9 @@
 - 🕹️ 三种玩法：经典 / 穿墙 / 限时挑战（60 秒抢分，吃食物加时）
 - ⚡ 连击倍率：2.5 秒内连续吃到食物，得分按连击递增（最高 5 倍）
 - 🥇 成就系统：15 个成就、进度条与累计统计，跨局持久化
+- 🗓️ 每日挑战：按日期固定随机种子与规则排期，记录今日最佳与连续天数
+- 📈 数据统计页：生涯数据、每日挑战进度与排行榜 Top 5
+- ⏸️ 暂停菜单：继续 / 重新开始 / 返回主页
 - 🧱 关卡与障碍：边墙、立柱阵、十字回廊、回字迷宫
 - 🌀 传送门：成对入口/出口，瞬间穿越棋盘
 - 🎨 皮肤系统：经典 / 像素 / 霓虹 / 糖果，支持切换
@@ -37,17 +40,17 @@
 
 ## 下载
 
-### v0.11.1（当前版本）
+### v0.12.0（当前版本）
 
-- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.1)
-- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.1)
-- [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/v0.11.1/)（每个 `v*` tag 会生成独立的
+- [Android APK](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.12.0)
+- [Windows ZIP](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.12.0)
+- [Web 在线试玩](https://g-ai-002.github.io/flutter-snake/v0.12.0/)（每个 `v*` tag 会生成独立的
   `v<版本>/` 目录，非 tag 构建写入 `debug/`）
 
 ### 历史版本
 
-- [v0.11.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0) | [v0.10.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1) | [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0) | [v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0)
-- 更早版本（v0.8.0 及以前）：[v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
+- [v0.11.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.1) | [v0.11.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.11.0) | [v0.10.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.1) | [v0.10.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.10.0)
+- 更早版本（v0.9.0 及以前）：[v0.9.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.9.0) | [v0.8.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.8.0) | [v0.7.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.7.0) | [v0.6.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.6.0) | [v0.5.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.5.0) | [v0.4.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.4.0) | [v0.3.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.1) | [v0.3.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.3.0) | [v0.2.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.2) | [v0.2.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.1) | [v0.2.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.2.0) | [v0.1.2](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.2) | [v0.1.1](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.1) | [v0.1.0](https://github.com/g-ai-002/flutter-snake/releases/tag/v0.1.0)
 
 ## 开发
 
@@ -88,7 +91,7 @@ flutter create --platforms=web --project-name flutter_snake .
 flutter run -d chrome
 ```
 
-发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.11.1/`、`v0.11.0/` …），
+发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.12.0/`、`v0.11.1/` …），
 非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
 
 ### 发布
@@ -97,8 +100,8 @@ flutter run -d chrome
 Windows ZIP，并在对应平台自动创建 Release：
 
 ```bash
-git tag v0.11.0
-git push origin v0.11.0
+git tag v0.12.0
+git push origin v0.12.0
 ```
 
 构建产物的版本号取自 `pubspec.yaml` 的 `version` 字段，标签版本号优先；应用内展示的版本号
@@ -126,7 +129,9 @@ git push origin v0.11.0
 - `lib/providers/game_provider.dart`：游戏规则、模式与持久化
 - `lib/models/game_mode.dart` / `lib/models/achievement.dart`：玩法模式与成就定义
 - `lib/services/stats_service.dart`：玩家统计与成就解锁
+- `lib/models/daily_challenge.dart` / `lib/services/daily_service.dart`：每日挑战排期、种子与成绩记录
 - `lib/pages/widgets/game_hud.dart`：悬浮在画布上的 HUD（按字段精确订阅，避免每步重绘）
+- `lib/pages/stats_page.dart`：生涯数据、每日挑战与排行榜摘要
 - `lib/pages/settings_page.dart`：设置页（统一的 `_OptionGroup` 选项组件 + `RadioGroup`）
 - `lib/pages/achievements_page.dart`：成就进度页
 
