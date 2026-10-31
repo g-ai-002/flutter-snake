@@ -42,6 +42,27 @@
 
 ## 版本历史
 
+### v0.12.1 (PATCH)
+
+- **状态**: 开发完成 ✅
+- **目标**: 重构优化 0.12.0 存量代码，收敛重复的格式化/构建逻辑，降低每帧分配
+- **任务**:
+  - [x] 新增 `utils/formatters.dart`：日期键、日志时间戳、列表时间统一格式化
+  - [x] `DailyChallenge`、排行榜页、统计页、日志服务改用公共格式化
+  - [x] 日志服务 IO/Web 共用行格式化，删除重复的 `_pad` / `_formatLine`
+  - [x] `SettingsProvider` 抽出统一写入流程，7 个 setter 收敛
+  - [x] `GameProvider` 拆分开局装配（出生点/重置/每日规则）与结算记录
+  - [x] `SnakeGame` 方向键改查表，死亡与超时共用结算收尾，倒计时停止复用
+  - [x] 主页导航与快捷入口抽出公共方法与 `_NavButton`，去掉重复构建代码
+  - [x] 统计页与成就页共用 `StatMetric` 组件
+  - [x] 排行榜页拆分构建方法、复用时间格式化、段位配色提取常量
+  - [x] `PowerUpManager.update` 去掉每帧列表拷贝
+  - [x] 关卡墙体烘焙为 `ui.Picture`，逐帧只回放绘制指令
+  - [x] 删除死代码 `LeaderboardService.getHighScore`
+  - [x] 新增 formatters 单测与设置项回归测试
+  - [x] 版本号 0.12.0 → 0.12.1
+  - [x] 更新 README/plan/versions
+
 ### v0.12.0 (MINOR)
 
 - **状态**: 开发完成 ✅
