@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../game/level_style.dart';
 import '../game/mode_style.dart';
 import '../game/skins/skin_style.dart';
@@ -61,9 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final game = context.read<GameProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('设置'),
-      ),
+      appBar: AppBar(title: const Text('设置')),
       body: ListView(
         children: [
           const SizedBox(height: 8),
@@ -94,91 +93,86 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(),
           // 棋盘大小
-          const _SectionHeader(title: '棋盘大小'),
-          ...AppConstants.boardOptions.map((opt) {
-            return RadioListTile<int>(
-              title: Text(opt.label),
-              value: opt.size,
-              groupValue: settings.boardSize,
-              onChanged: (v) {
-                if (v != null) {
-                  settings.setBoardSize(v);
-                  game.updateBoardSize(v);
-                }
-              },
-              secondary: Icon(Icons.grid_on, color: colorScheme.primary),
-            );
-          }),
+          _OptionGroup<int>(
+            title: '棋盘大小',
+            value: settings.boardSize,
+            options: [
+              for (final opt in AppConstants.boardOptions)
+                _Option(value: opt.size, label: opt.label, icon: Icons.grid_on),
+            ],
+            onChanged: (v) {
+              settings.setBoardSize(v);
+              game.updateBoardSize(v);
+            },
+          ),
           const Divider(),
           // 速度
-          const _SectionHeader(title: '游戏速度'),
-          ...AppConstants.speedOptions.map((opt) {
-            return RadioListTile<int>(
-              title: Text(opt.label),
-              value: opt.ms,
-              groupValue: settings.speed,
-              onChanged: (v) {
-                if (v != null) {
-                  settings.setSpeed(v);
-                  game.updateSpeed(v);
-                }
-              },
-              secondary: Icon(Icons.speed, color: colorScheme.primary),
-            );
-          }),
+          _OptionGroup<int>(
+            title: '游戏速度',
+            value: settings.speed,
+            options: [
+              for (final opt in AppConstants.speedOptions)
+                _Option(value: opt.ms, label: opt.label, icon: Icons.speed),
+            ],
+            onChanged: (v) {
+              settings.setSpeed(v);
+              game.updateSpeed(v);
+            },
+          ),
           const Divider(),
           // 玩法模式
-          const _SectionHeader(title: '玩法模式'),
-          ...GameMode.values.map((mode) {
-            return RadioListTile<GameMode>(
-              title: Text(mode.label),
-              subtitle: Text(mode.description),
-              value: mode,
-              groupValue: settings.mode,
-              onChanged: (v) {
-                if (v != null) {
-                  settings.setMode(v);
-                  game.updateMode(v);
-                }
-              },
-              secondary: Icon(modeIcon(mode), color: colorScheme.primary),
-            );
-          }),
+          _OptionGroup<GameMode>(
+            title: '玩法模式',
+            value: settings.mode,
+            options: [
+              for (final mode in GameMode.values)
+                _Option(
+                  value: mode,
+                  label: mode.label,
+                  subtitle: mode.description,
+                  icon: modeIcon(mode),
+                ),
+            ],
+            onChanged: (v) {
+              settings.setMode(v);
+              game.updateMode(v);
+            },
+          ),
           const Divider(),
           // 关卡
-          const _SectionHeader(title: '关卡'),
-          ...LevelType.values.map((level) {
-            return RadioListTile<LevelType>(
-              title: Text(level.label),
-              subtitle: Text(level.description),
-              value: level,
-              groupValue: settings.level,
-              onChanged: (v) {
-                if (v != null) {
-                  settings.setLevel(v);
-                  game.updateLevel(v);
-                }
-              },
-              secondary: Icon(levelIcon(level), color: colorScheme.primary),
-            );
-          }),
+          _OptionGroup<LevelType>(
+            title: '关卡',
+            value: settings.level,
+            options: [
+              for (final level in LevelType.values)
+                _Option(
+                  value: level,
+                  label: level.label,
+                  subtitle: level.description,
+                  icon: levelIcon(level),
+                ),
+            ],
+            onChanged: (v) {
+              settings.setLevel(v);
+              game.updateLevel(v);
+            },
+          ),
           const Divider(),
           // 皮肤
-          const _SectionHeader(title: '皮肤'),
-          ...SnakeSkin.values.map((skin) {
-            return RadioListTile<SnakeSkin>(
-              title: Text(skin.label),
-              subtitle: Text(skin.description),
-              value: skin,
-              groupValue: settings.skin,
-              onChanged: (v) {
-                if (v != null) {
-                  settings.setSkin(v);
-                }
-              },
-              secondary: Icon(skinIcon(skin), color: colorScheme.primary),
-            );
-          }),
+          _OptionGroup<SnakeSkin>(
+            title: '皮肤',
+            value: settings.skin,
+            options: [
+              for (final skin in SnakeSkin.values)
+                _Option(
+                  value: skin,
+                  label: skin.label,
+                  subtitle: skin.description,
+                  icon: skinIcon(skin),
+                ),
+            ],
+            onChanged: settings.setSkin,
+          ),
           const Divider(),
           // 关于
           const _SectionHeader(title: '关于'),
@@ -254,12 +248,11 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icon(Icons.open_in_new, color: theme.colorScheme.primary),
               tooltip: '打开目录',
               onPressed: () async {
-                final ok =
-                    await FileSystemService.instance.openDirectory(path);
+                final ok = await FileSystemService.instance.openDirectory(path);
                 if (!ok && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('当前平台不支持打开目录')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('当前平台不支持打开目录')));
                 }
               },
             ),
@@ -271,10 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _copyText(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已复制到剪贴板'),
-        duration: Duration(seconds: 2),
-      ),
+      const SnackBar(content: Text('已复制到剪贴板'), duration: Duration(seconds: 2)),
     );
   }
 
@@ -318,7 +308,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: SelectableText(
                         _logContent.isEmpty ? '暂无日志' : _logContent,
                         style: const TextStyle(
-                            fontFamily: 'monospace', fontSize: 11),
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),
@@ -342,10 +334,73 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+        style: Theme.of(context).textTheme.titleSmall
+            ?.copyWith(color: Theme.of(context).colorScheme.primary),
       ),
+    );
+  }
+}
+
+/// 单个选项的描述，供 [_OptionGroup] 统一渲染。
+class _Option<T> {
+  const _Option({
+    required this.value,
+    required this.label,
+    required this.icon,
+    this.subtitle,
+  });
+
+  final T value;
+  final String label;
+  final String? subtitle;
+  final IconData icon;
+}
+
+/// 一组单选设置项：标题 + 选中值 + 选项列表。
+///
+/// 选中值由 [RadioGroup] 统一管理，选项只声明自身取值与文案。
+class _OptionGroup<T> extends StatelessWidget {
+  const _OptionGroup({
+    required this.title,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final String title;
+  final T value;
+  final List<_Option<T>> options;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionHeader(title: title),
+        RadioGroup<T>(
+          groupValue: value,
+          onChanged: (next) {
+            if (next != null) {
+              onChanged(next);
+            }
+          },
+          child: Column(
+            children: [
+              for (final option in options)
+                RadioListTile<T>(
+                  value: option.value,
+                  title: Text(option.label),
+                  subtitle: option.subtitle == null
+                      ? null
+                      : Text(option.subtitle!),
+                  secondary: Icon(option.icon, color: accent),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
