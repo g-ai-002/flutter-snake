@@ -4,15 +4,18 @@ import 'package:flutter_snake/services/leaderboard_service.dart';
 void main() {
   group('LeaderboardEntry', () {
     test('toJson and fromJson roundtrip', () {
-      final entry = LeaderboardEntry(score: 100, date: DateTime(2026, 6, 21, 12, 0));
+      final entry = LeaderboardEntry(
+        score: 100,
+        date: DateTime(2026, 6, 21, 12),
+      );
       final json = entry.toJson();
       final restored = LeaderboardEntry.fromJson(json);
       expect(restored.score, 100);
-      expect(restored.date, DateTime(2026, 6, 21, 12, 0));
+      expect(restored.date, DateTime(2026, 6, 21, 12));
     });
 
     test('toJson 包含 score 和 date', () {
-      final entry = LeaderboardEntry(score: 50, date: DateTime(2026, 1, 1));
+      final entry = LeaderboardEntry(score: 50, date: DateTime(2026));
       final json = entry.toJson();
       expect(json['score'], 50);
       expect(json['date'], isA<String>());

@@ -8,8 +8,7 @@ import 'log_service.dart';
 class FileSystemService {
   FileSystemService._(this.appDirName);
 
-  static final FileSystemService instance =
-      FileSystemService._('FlutterSnake');
+  static final FileSystemService instance = FileSystemService._('FlutterSnake');
 
   /// 应用数据目录名（位于 Documents 或应用外部存储下）
   final String appDirName;
@@ -24,7 +23,7 @@ class FileSystemService {
     return getApplicationDocumentsDirectory();
   }
 
-  /// 日志根目录：<Documents 或 external>/<appDirName>/logs
+  /// 日志根目录：`<Documents 或 external>/<appDirName>/logs`
   Future<Directory> getLogRoot() async {
     if (_logRoot != null) return _logRoot!;
     final base = await _baseDir();

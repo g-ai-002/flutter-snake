@@ -128,7 +128,7 @@ class AudioService {
     const durationMs = 8000;
     const noteDuration = 0.5;
     const notes = [261.63, 329.63, 392.00, 523.25];
-    final numSamples = sampleRate * durationMs ~/ 1000;
+    const numSamples = sampleRate * durationMs ~/ 1000;
     return _buildWav(sampleRate, numSamples, (i) {
       final t = i / sampleRate;
       final noteIndex = (t / noteDuration).floor() % notes.length;

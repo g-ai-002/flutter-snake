@@ -25,7 +25,6 @@ Future<void> main() async {
   await StatsService.instance.load();
   LogService.info('应用启动: ${AppConstants.appName} v${AppConstants.version}');
 
-  AudioService().setMuted(storage.muted);
   runApp(SnakeApp(storage: storage));
   WidgetsBinding.instance.addPostFrameCallback((_) {
     AudioService().prewarm();

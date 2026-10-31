@@ -3,17 +3,14 @@ import 'package:flutter/material.dart';
 ThemeData buildLightTheme({String? fontFamily}) {
   const colorScheme = ColorScheme.light(
     primary: Color(0xFF4CAF50),
-    onPrimary: Colors.white,
     primaryContainer: Color(0xFFC8E6C9),
     onPrimaryContainer: Color(0xFF1B5E20),
     secondary: Color(0xFFFF9800),
     onSecondary: Colors.white,
-    surface: Color(0xFFFFFFFF),
     onSurface: Color(0xFF222222),
     surfaceContainerHighest: Color(0xFFEEF0F3),
     onSurfaceVariant: Color(0xFF6B7280),
     error: Color(0xFFE53935),
-    onError: Colors.white,
     outline: Color(0xFFE5E7EB),
     surfaceTint: Colors.transparent,
   );
