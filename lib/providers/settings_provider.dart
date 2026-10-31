@@ -8,26 +8,26 @@ import '../services/storage_service.dart';
 import '../utils/constants.dart';
 
 class SettingsProvider extends ChangeNotifier {
-  final StorageService _storage;
-
-  SettingsProvider(this._storage) {
-    _darkMode = _storage.darkMode;
-    _boardSize = _storage.boardSize;
-    _speed = _storage.speed;
-    _muted = _storage.muted;
-    _level = _storage.level;
-    _skin = _storage.skin;
-    _mode = _storage.mode;
+  SettingsProvider(StorageService storage)
+    : _storage = storage,
+      _darkMode = storage.darkMode,
+      _boardSize = storage.boardSize,
+      _speed = storage.speed,
+      _muted = storage.muted,
+      _level = storage.level,
+      _skin = storage.skin,
+      _mode = storage.mode {
     AudioService().setMuted(_muted);
   }
 
-  late bool _darkMode;
-  late int _boardSize;
-  late int _speed;
-  late bool _muted;
-  late LevelType _level;
-  late SnakeSkin _skin;
-  late GameMode _mode;
+  final StorageService _storage;
+  bool _darkMode;
+  int _boardSize;
+  int _speed;
+  bool _muted;
+  LevelType _level;
+  SnakeSkin _skin;
+  GameMode _mode;
 
   bool get darkMode => _darkMode;
   int get boardSize => _boardSize;
@@ -58,50 +58,50 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> toggleDarkMode(bool value) async {
     if (_darkMode == value) return;
     _darkMode = value;
-    await _storage.setDarkMode(value);
     notifyListeners();
+    await _storage.setDarkMode(value);
   }
 
   Future<void> setBoardSize(int size) async {
     if (_boardSize == size) return;
     _boardSize = size;
-    await _storage.setBoardSize(size);
     notifyListeners();
+    await _storage.setBoardSize(size);
   }
 
   Future<void> setSpeed(int ms) async {
     if (_speed == ms) return;
     _speed = ms;
-    await _storage.setSpeed(ms);
     notifyListeners();
+    await _storage.setSpeed(ms);
   }
 
   Future<void> setLevel(LevelType level) async {
     if (_level == level) return;
     _level = level;
-    await _storage.setLevel(level);
     notifyListeners();
+    await _storage.setLevel(level);
   }
 
   Future<void> setSkin(SnakeSkin skin) async {
     if (_skin == skin) return;
     _skin = skin;
-    await _storage.setSkin(skin);
     notifyListeners();
+    await _storage.setSkin(skin);
   }
 
   Future<void> setMode(GameMode mode) async {
     if (_mode == mode) return;
     _mode = mode;
-    await _storage.setMode(mode);
     notifyListeners();
+    await _storage.setMode(mode);
   }
 
   Future<void> setMuted(bool v) async {
     if (_muted == v) return;
     _muted = v;
     AudioService().setMuted(v);
-    await _storage.setMuted(v);
     notifyListeners();
+    await _storage.setMuted(v);
   }
 }
