@@ -97,7 +97,9 @@ flutter run -d chrome
 ```
 
 发布 `v*` tag 后，GitHub Pages 会为每个版本保留独立目录（`v0.13.0/`、`v0.12.1/` …），
-非 tag 构建写入 `debug/`，根目录自动生成版本索引页与 `versions.json`。
+但只保留最近 3 个 MINOR 版本（每个 MINOR 取最新一次发布）；非 tag 构建写入
+`debug/`，根目录自动生成版本索引页与 `versions.json`，`gh-pages` 每次发布都
+压缩成一次提交。
 
 ### 发布
 
